@@ -4,14 +4,11 @@ import LoggingScreen from "./LoggingScreen";
 import MainScreen from "./MainScreen"
 
 function App() {
-
-  const [isLoggingScreen, toggleLoggingScreen] = React.useState(true);
-
-
+  const [isLoggingScreen, setLoggingScreen] = React.useState(true);
   return (
-    <div id='main'>
+    <div id='app'>
       <div id='logscreen'>
-        {isLoggingScreen ? <LoggingScreen/> : <MainScreen/>}
+        {isLoggingScreen ? <LoggingScreen switchScene = {setLoggingScreen}/> : <MainScreen/>}
       </div>
     </div>
   );
