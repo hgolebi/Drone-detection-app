@@ -29,12 +29,15 @@ class OpenCVTracker(Tracker):
     
     def update_trackers(self, bboxes, frame):
         for new_bbox in bboxes:
+            found_bbox = False
             for bbox in self.trackers.getObjects():
                 bbox = bbox.astype(int)
                 if self.box_over_threshold(new_bbox, bbox):
+                    found_bbox = True
                     break
-            tracker = self.tracker_type()
-            self.trackers.add(tracker, frame, new_bbox)
+            if not found_bbox:
+                tracker = self.tracker_type()
+                self.trackers.add(tracker, frame, new_bbox)
     
     def box_over_threshold(self, bbox1, bbox2, threshold = .2):
         x1, y1, w1, h1 = bbox1
