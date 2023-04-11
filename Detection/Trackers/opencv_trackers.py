@@ -5,33 +5,23 @@ import numpy as np
  
 class OpenCVTracker(Tracker):
     names = {
-        'KCF':cv2.TrackerKCF_create,
-        'MEDIANFLOW':cv2.TrackerMedianFlow_create,
-        'CSRT':cv2.TrackerCSRT_create}
+        'KCF':cv2.legacy.TrackerKCF_create,
+        'MEDIANFLOW':cv2.legacy.TrackerMedianFlow_create,
+        'CSRT':cv2.legacy.TrackerCSRT_create}
     
     def __init__(self, name='CSRT'):
-        self.trackers = cv2.MultiTracker_create()
+        self.trackers = cv2.legacy.MultiTracker_create()
         self.tracker_type = self.names[name]
     
     def update(self, bboxes, scores, frame):
         """
         1. create trackers for bboxes detected
         2. update trackers
-        3. delete unused trackers
-        4. create Tracks from bboxes
+        3. create Tracks from bboxes
         """
         self.update_trackers(bboxes, frame)
-        _, tracked_bboxes = self.trackers.update(frame)
-        # self.delete_trackers(tracked_bboxes, bboxes)
+        success, tracked_bboxes = self.trackers.update(frame)
         self.tracks = self.get_bboxes()
-
-    # def delete_trackers(self, tracked_bboxes, bboxes):
-    #     removed = []
-    #     for i, b1, b2 in enumerate(zip(tracked_bboxes, bboxes)):
-    #         if self.box_over_threshold(b1, b2, .95):
-    #             removed.append(i)
-        
-        
 
     def update_trackers(self, bboxes, frame):
         for new_bbox in bboxes:
