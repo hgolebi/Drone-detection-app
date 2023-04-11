@@ -48,13 +48,20 @@ class SortTracker(Tracker):
         self.tracks = []
     
     def update(self, bboxes, scores, frame=None):
-        bboxes = np.array(bboxes)
+        bboxes = self.xywh_to_xyxy(np.array(bboxes).reshape(-1, 4))
         scores = np.array(scores).reshape(-1, 1)
         detections = np.c_[bboxes, scores]
-        track_bbs_ids = self.sort.update(detections)
+        tracked = self.sort.update(detections)
         
-        for bbox, box_id in zip(bboxes, track_bbs_ids):
-            box_id = int(box_id[0])
+        # tracked[:, :4] = self.xyxy_to_xywh(np.array(tracked)[:, :4])
+        self.tracks.clear()
+        for *bbox, box_id in tracked:
+            box_id = int(box_id)
             self.tracks.append(Track(box_id, bbox))
         return self.tracks
 
+    def xywh_to_xyxy(self, bboxes):
+        return np.hstack((bboxes[:, 0:2], bboxes[:, 0:2] + bboxes[:, 2:4] - 1))
+    
+    def xyxy_to_xywh(self, bboxes):
+        return np.hstack((bboxes[:, 0:2], bboxes[:, 2:4] - bboxes[:, 0:2] + 1))
