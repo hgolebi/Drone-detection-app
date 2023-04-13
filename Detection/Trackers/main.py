@@ -3,6 +3,7 @@ import cv2
 from ultralytics import YOLO
 from deep_sort_tracker import DeepSortTracker, SortTracker
 import random
+from opencv_trackers import OpenCVTracker
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(device)
@@ -11,7 +12,10 @@ model = YOLO('yolov8l.pt')
 model.to(device)
 
 # Initialize the DeepSORT tracker
-sort_tracker = DeepSortTracker()
+# sort_tracker = DeepSortTracker()
+# sort_tracker = OpenCVTracker()
+# sort_tracker = OpenCVTracker('MEDIANFLOW')
+sort_tracker = OpenCVTracker('KCF')
 # sort_tracker = SortTracker()
 
 # Open the video file
