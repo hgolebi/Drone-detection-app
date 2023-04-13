@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+
+<html lang="pl">
+
+<head>
+    <meta charset="utf-8">
+
+    <title>{{ title }}</title>
+</head>
+
+
+<body>
+    <h1> {{ title }}</h1>
+
+    <a href="./upload/">dodaj wideo</a>
+    <ul>
+        {% for video in videos %}
+        <li>
+            <a href=./uploads/{{video}}>{{ video }}</a>
+            <a href=./download/{{video}}> Pobierz</a>
+        </li>
+        {% endfor %}
+    </ul>
+</body>
+
+</html>
