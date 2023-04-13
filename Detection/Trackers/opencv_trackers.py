@@ -4,6 +4,7 @@ import numpy as np
  
  
 class OpenCVTracker(Tracker):
+    """ Use cv.MultiTracker to implement 3 types of openCV trackers """
     names = {
         'KCF':cv2.legacy.TrackerKCF_create,
         'MEDIANFLOW':cv2.legacy.TrackerMedianFlow_create,
@@ -14,19 +15,15 @@ class OpenCVTracker(Tracker):
         self.tracker_type = self.names[name]
     
     def update(self, bboxes, scores, frame):
-        """
-        1. create trackers for bboxes detected
-        2. update trackers
-        3. create Tracks from bboxes
-        """
+        """ Update trackers and return new Track objects """
         self.update_trackers(bboxes, frame)
-        success, tracked_bboxes = self.trackers.update(frame)
+        self.trackers.update(frame)
         self.tracks = self.get_bboxes()
 
     def update_trackers(self, bboxes, frame):
+        """Check IOU of newly detected bboxes """
         for new_bbox in bboxes:
             found_bbox = False
-            x = self.trackers.getObjects()
             for bbox in self.trackers.getObjects():
                 bbox = bbox.astype(int)
                 if self.box_over_threshold(new_bbox, bbox):
@@ -37,6 +34,7 @@ class OpenCVTracker(Tracker):
                 self.trackers.add(tracker, frame, new_bbox)
     
     def box_over_threshold(self, bbox1, bbox2, threshold = .4):
+        """ Check if IOU is over set threshold """
         x1, y1, w1, h1 = bbox1
         x2, y2, w2, h2 = bbox2
         x_left = max(x1, x2)
@@ -52,15 +50,11 @@ class OpenCVTracker(Tracker):
             
     
     def get_bboxes(self):
+        """ Create Track objects """
         tracks = []
         bboxes = self.xywh_to_xyxy(np.array(self.trackers.getObjects()))
         for bbox in bboxes:
             bbox = bbox.astype(int)
+            # TODO id
             tracks.append(Track(999, bbox))
         return tracks
-    
-    def xywh_to_xyxy(self, bboxes):
-        return np.hstack((bboxes[:, 0:2], bboxes[:, 0:2] + bboxes[:, 2:4] - 1))
-    
-    def xyxy_to_xywh(self, bboxes):
-        return np.hstack((bboxes[:, 0:2], bboxes[:, 2:4] - bboxes[:, 0:2] + 1))

@@ -8,6 +8,7 @@ from tracker import Tracker, Track
 import numpy as np
 
 class DeepSortTracker(Tracker):
+    """ Utilize DeepSort library with it's box encoder to track objects. """
     def __init__(self, metric=None, encoder_filename='./mars-small128.pb'):
         if metric is None:
             metric = nn_matching.NearestNeighborDistanceMetric("cosine", 0.4)
@@ -17,8 +18,7 @@ class DeepSortTracker(Tracker):
         
 
     def update(self, bboxes, scores, frame):
-        """updates tracker using bboxes with xywh format (where x is left x, not yolo format)
-        """
+        """ Update tracker using bboxes with standard xywh format (not YOLO xywh format!)"""
         features = self.encoder(frame, bboxes)
 
         detections_scores_features = []
@@ -31,6 +31,7 @@ class DeepSortTracker(Tracker):
         return self.tracks
 
     def update_tracks(self):
+        """ Create Track objects from confirmed tracks  """
         tracks = []
         for track in self.deep_sort.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
@@ -43,25 +44,21 @@ class DeepSortTracker(Tracker):
         self.tracks = tracks
 
 class SortTracker(Tracker):
+    """ Utilize Sort library to track objects """
     def __init__(self):
         self.sort = Sort(max_age=1, min_hits=3, iou_threshold=0.6)
         self.tracks = []
     
     def update(self, bboxes, scores, frame=None):
+        """ Convert bboxes and scores to right format and upadte tracks """
         bboxes = self.xywh_to_xyxy(np.array(bboxes).reshape(-1, 4))
         scores = np.array(scores).reshape(-1, 1)
         detections = np.c_[bboxes, scores]
+        
         tracked = self.sort.update(detections)
         
-        # tracked[:, :4] = self.xyxy_to_xywh(np.array(tracked)[:, :4])
         self.tracks.clear()
         for *bbox, box_id in tracked:
             box_id = int(box_id)
             self.tracks.append(Track(box_id, bbox))
         return self.tracks
-
-    def xywh_to_xyxy(self, bboxes):
-        return np.hstack((bboxes[:, 0:2], bboxes[:, 0:2] + bboxes[:, 2:4] - 1))
-    
-    def xyxy_to_xywh(self, bboxes):
-        return np.hstack((bboxes[:, 0:2], bboxes[:, 2:4] - bboxes[:, 0:2] + 1))
