@@ -1,17 +1,17 @@
 import cv2
 import os
 
-def get_dimensions_videos(dir_with_videos, dimensions_file=None):
+def get_dimensions_videos(dir_with_videos):
     dimensions = []
 
-    if dimensions_file:
-        with open(dimensions_file, 'r') as file:
+    if os.path.exists("dimensions.txt"):
+        with open("dimensions.txt", 'r') as file:
             lines = file.readlines()
             for line in lines[:-1]:
                 width, height = line.strip().split(", ")
                 dimensions.append((float(width), float(height)))
     else:
-        for filename in os.listdir(dir_with_videos):
+        for idx, filename in enumerate(os.listdir(dir_with_videos)):
             vid = cv2.VideoCapture(filename)
             if not vid.isOpened():
                 vid.open(os.path.join(dir_with_videos, filename))
@@ -20,7 +20,9 @@ def get_dimensions_videos(dir_with_videos, dimensions_file=None):
             width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
             dimensions.append((width, height))
             with open("dimensions.txt", 'a') as file:
-                file.write(f"{width}, {height}\n")
+                dim = f"{width}, {height}\n" if (idx+1 < len(os.listdir(dir_with_videos))) \
+                    else f"{width}, {height}"
+                file.write(dim)
 
             vid.release()
 
@@ -64,7 +66,7 @@ def write_each_ann_to_single_file(input_dir_with_annotations, dimensions, output
         
         for line in lines:
             frame_num = int(line.split(" ")[0])
-            output_path = output_dir + "/" + f"{filename}_frame_{frame_num:05d}.txt"
+            output_path = output_dir + "/" + f"{filename[:-4]}_frame_{frame_num:05d}.txt"
             with open(output_path, 'w') as new_file:
                 new_lines = change_to_yolo_format(line, width, height)
                 for idx, new_line in enumerate(new_lines):
