@@ -16,8 +16,8 @@
     <ul>
         {% for video in videos %}
         <li>
-            <a href=./uploads/{{video}}>{{ video }}</a>
-            <a href=./download/{{video}}> Pobierz</a>
+            <a href=./video/{{video}}>{{ video }}</a>
+            <a href=./video/{{video}}?attachment> Pobierz</a>
         </li>
         {% endfor %}
     </ul>

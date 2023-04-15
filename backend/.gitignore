@@ -1,2 +1,6 @@
 uploads/*
+thumbnails/*
 !uploads/.gitkeep
+!thumbnails/.gitkeep
+
+__pycache__
