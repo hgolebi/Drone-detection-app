@@ -40,12 +40,12 @@ def change_to_yolo_format(line, width, height):
                 drone_values = []
                 continue
             drone_values.append(value)
-
+            
     new_anns = []
     for drone in drones_captured:
         if values[1] != '0':
             drone[0] = str((int(drone[0]) + (int(drone[2])/2)) / width)
-            drone[1] = str((int(drone[1]) - (int(drone[3])/2)) / height)
+            drone[1] = str((int(drone[1]) + (int(drone[3])/2)) / height)
             drone[2] = str(int(drone[2]) / width)
             drone[3] = str(int(drone[3]) / height)
             drone = [str(abs(float(x))) for x in drone]
