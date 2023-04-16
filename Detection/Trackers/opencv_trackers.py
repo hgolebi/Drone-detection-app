@@ -22,39 +22,43 @@ class OpenCVTracker(Tracker):
 
     def update_trackers(self, bboxes, frame):
         """Check IOU of newly detected bboxes """
+        current_boxes = self.trackers.getObjects()
         for new_bbox in bboxes:
-            found_bbox = False
-            for bbox in self.trackers.getObjects():
-                bbox = bbox.astype(int)
-                if self.box_over_threshold(new_bbox, bbox):
-                    found_bbox = True
-                    break
-            if not found_bbox:
+            if len(current_boxes) == 0 or not self.box_over_threshold(new_bbox, current_boxes):
                 tracker = self.tracker_type()
                 self.trackers.add(tracker, frame, new_bbox)
     
-    def box_over_threshold(self, bbox1, bbox2, threshold = .4):
+    def box_over_threshold(self, bbox, bboxes, threshold = .4):
         """ Check if IOU is over set threshold """
-        x1, y1, w1, h1 = bbox1
-        x2, y2, w2, h2 = bbox2
-        x_left = max(x1, x2)
-        y_top = max(y1, y2)
-        x_right = min(x1 + w1, x2 + w2)
-        y_bottom = min(y1 + h1, y2 + h2)
-        if x_right < x_left or y_bottom < y_top:
-            return False
+        x, y, w, h = bbox
+        bboxes = np.array(bboxes) # x1, y1, w1, h1
+        x_left = np.maximum(bboxes[:, 0], x)
+        y_top = np.maximum(bboxes[:, 1], y)
+        x_right = np.minimum(x + w, bboxes[:, 0] + bboxes[:, 2])
+        y_bottom = np.minimum(y + h, bboxes[:, 1] + bboxes[:, 3])
+        
         intersection_area = (x_right - x_left) * (y_bottom - y_top)
-        union_area = w1 * h1 + w2 * h2 - intersection_area
-        # print(intersection_area/union_area)
-        return intersection_area/union_area > threshold
+        
+        possible_idx = intersection_area>0
+        intersection_area = intersection_area[possible_idx]
+
+        union_area = w*h + bboxes[possible_idx, 2] * bboxes[possible_idx, 3] - intersection_area
+        return np.any(intersection_area/union_area > threshold)
+            
+    # def remove_unused(self):
+    #     arr = np.array(self.trackers.getObjects())
+    #     mask = (arr >= 0).all(axis=1)
+    #     idx = np.where(mask)[0]
+        
+    #     trackers = []
             
     
     def get_bboxes(self):
         """ Create Track objects """
         tracks = []
         bboxes = self.xywh_to_xyxy(np.array(self.trackers.getObjects()))
-        for bbox in bboxes:
+        for i, bbox in enumerate(bboxes):
             bbox = bbox.astype(int)
-            # TODO id
-            tracks.append(Track(999, bbox))
+            tracks.append(Track(i, bbox))
         return tracks
+
