@@ -1,6 +1,7 @@
 import os
 from flask import Flask, flash, request, redirect, url_for, send_from_directory, render_template
 from flask import abort, jsonify
+from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import thumbnails
 
@@ -9,7 +10,7 @@ ALLOWED_EXTENSIONS = {'mp4', 'mov'}
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
+CORS(app)
 
 @app.route("/")
 def hello_word():
@@ -55,6 +56,9 @@ def upload_file():
       <input type=submit value=Upload>
     </form>
     '''
+
+
+
 
 
 @app.route('/video/')

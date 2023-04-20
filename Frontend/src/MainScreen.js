@@ -2,6 +2,13 @@ import './MainScreen.css'
 
 function MainScreen(props) {
 
+    function loadVideos() {
+        fetch("http://localhost:5000/video/")
+        .then(response => response.json())
+        .then(json => console.log)
+        return
+    }
+
     function pass(){;}
     return (
         <div id="main_screen">
@@ -11,13 +18,15 @@ function MainScreen(props) {
                 </video>
             </div>
             <div id="buttons_container">
-                <button id="slow" onClick={pass}>slow</button>
+                <button id="slow" onClick={loadVideos}>slow</button>
                 <button id="fast" onClick={pass}>fast</button>
                 <button id="flow" onClick={pass}>flow</button>
                 <input type='range'></input>
-                <button id="download">download</button>
+                <button id="download" onClick>download</button>
             </div>
-            <div id="thumbnails_container">C</div>
+            <div id="thumbnails_container">
+                
+            </div>
             
         </div>
     )
