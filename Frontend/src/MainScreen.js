@@ -2,7 +2,7 @@ import './MainScreen.css'
 import React from 'react'
 
 const API_URL = 'http://localhost:5000/'
-function pass(){const elo = 'elo';}
+function pass(){;}
 
 class MainScreen extends React.Component {
 
@@ -13,14 +13,22 @@ class MainScreen extends React.Component {
         }
     }
 
-    loadVideos() {
-        fetch("http://localhost:5000/video/")
-        .then(response => response.json())
-        .then(json => console.log(json))
-        return
+    componentDidMount() {
+        this.getVideos();
+        return;
     }
 
-    sendVideo = (video) => {
+    getVideos()  {
+        fetch(API_URL+'video/').then(response => response.json())
+        .then(json => {
+            this.setState({videos: json});
+            // console.log(json);
+            console.log(this.state)
+        })
+    }
+
+
+    sendVideo(video) {
         const videoData = new FormData();
         videoData.append('file', video, video.name);
         fetch(API_URL+'upload/', {
@@ -28,9 +36,9 @@ class MainScreen extends React.Component {
           body: videoData
         })
           .then(response => console.log(response))
-        //   .then(() => this.getPhotos())
+          .then(() => this.getVideos())
           .catch(error => console.error(error))
-      }
+    }
 
     addVideoEventHandler = (event) => {
         const file = event.target.files[0];
@@ -42,6 +50,15 @@ class MainScreen extends React.Component {
 
 
     render(){
+        const thumbnail_list = this.state.videos.map((video, index) => (
+            <div className='tn_card' key={index}>
+                <img
+                    className='tn'
+                    src={API_URL+'thumbnail/'+video}
+                    key={index}>
+                    </img>
+            </div>
+        ))
         return (
             <div id="main_screen">
                 <div id="video_container">
@@ -57,13 +74,15 @@ class MainScreen extends React.Component {
                     <button id="download" onClick>download</button>
                 </div>
                 <div id="thumbnails_container">
-                <input
-                    type="file"
-                    accept="video/mp4, video/mov"
-                    onChange={this.addVideoEventHandler}>
-                </input>
+                    <input
+                        type="file"
+                        accept="video/mp4, video/mov"
+                        onChange={this.addVideoEventHandler}>
+                    </input>
+                    <ul id='tn_list'>
+                        {thumbnail_list}
+                    </ul>
                 </div>
-
             </div>
         )
     }
