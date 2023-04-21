@@ -2,5 +2,5 @@ uploads/*
 thumbnails/*
 !uploads/.gitkeep
 !thumbnails/.gitkeep
-
+env/
 __pycache__

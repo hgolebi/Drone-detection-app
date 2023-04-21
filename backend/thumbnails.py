@@ -22,4 +22,4 @@ def check_thumbnail(videname: str):
         generate_thumbnail(videname, 100)
 
 
-check_thumbnail("film.mp4")
+# check_thumbnail("film.mp4")
