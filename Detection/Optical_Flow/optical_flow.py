@@ -22,3 +22,19 @@ class OpticalFlow:
         hsv[..., 2] = cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX)
         bgr = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
         return bgr
+    
+
+if __name__ == '__main__':
+    cap = cv.VideoCapture(cv.samples.findFile("./walk.mp4"))
+
+    of = OpticalFlow()
+    ret, frame1 = cap.read()
+    
+    while True:
+        ret, frame2 = cap.read()
+        flow = of.calculate_flow(frame1, frame2)
+        flow_map = of.map_flow(flow)
+        cv.imshow('frame2', flow_map)
+        k = cv.waitKey(30) & 0xff
+        frame1 = frame2
+    
