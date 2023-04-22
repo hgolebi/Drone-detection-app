@@ -48,7 +48,12 @@ def change_to_yolo_format(line, width, height):
             drone[1] = str((int(drone[1]) + (int(drone[3])/2)) / height)
             drone[2] = str(int(drone[2]) / width)
             drone[3] = str(int(drone[3]) / height)
-            drone = [str(abs(float(x))) for x in drone]
+
+            for idx, dr in enumerate(drone):
+                if float(dr) < 0:
+                    drone[idx] = '0.0'
+
+            # drone = [str(abs(float(x))) for x in drone]
             drone.insert(0, '0')
             new_anns.append(" ".join(drone))
         else:
@@ -66,11 +71,12 @@ def write_each_ann_to_single_file(input_dir_with_annotations, dimensions, output
             lines = f.readlines()
         
         for idx, line in enumerate(lines):
-            frame_num = int(line.split(" ")[0])
-            output_path = output_dir + "/" + f"{filename[:-4]}_frame_{frame_num:05d}.txt"
-            with open(output_path, 'w') as new_file:
-                new_lines = change_to_yolo_format(line, width, height)
-                for idx, new_line in enumerate(new_lines):
-                    if idx+1 < len(new_lines):
-                        new_line += "\n"
-                    new_file.write(new_line)
+            if idx % 10 == 0:
+                frame_num = int(line.split(" ")[0])
+                output_path = output_dir + "/" + f"{filename[:-4]}_frame_{frame_num:05d}.txt"
+                with open(output_path, 'w') as new_file:
+                    new_lines = change_to_yolo_format(line, width, height)
+                    for idx, new_line in enumerate(new_lines):
+                        if idx+1 < len(new_lines):
+                            new_line += "\n"
+                        new_file.write(new_line)
