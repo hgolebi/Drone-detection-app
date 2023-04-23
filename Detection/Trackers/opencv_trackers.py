@@ -56,7 +56,10 @@ class OpenCVTracker(Tracker):
     def get_bboxes(self):
         """ Create Track objects """
         tracks = []
-        bboxes = self.xywh_to_xyxy(np.array(self.trackers.getObjects()))
+        bboxes = np.array(self.trackers.getObjects())
+        if not bboxes.any():
+            return []
+        bboxes = self.xywh_to_xyxy(bboxes)
         for i, bbox in enumerate(bboxes):
             bbox = bbox.astype(int)
             tracks.append(Track(i, bbox))
