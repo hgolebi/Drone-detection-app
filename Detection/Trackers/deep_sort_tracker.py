@@ -6,13 +6,17 @@ from deep_sort.deep_sort.detection import Detection
 from sort.sort import Sort
 from tracker import Tracker, Track
 import numpy as np
+from pathlib import Path
+
+from Trackers import encoder_dir
 
 class DeepSortTracker(Tracker):
     """ Utilize DeepSort library with it's box encoder to track objects. """
-    def __init__(self, metric=None, encoder_filename='./mars-small128.pb'):
+    def __init__(self, metric=None, encoder_filename=f'{encoder_dir}\mars-small128.pb'):
         if metric is None:
             metric = nn_matching.NearestNeighborDistanceMetric("cosine", 0.4)
         self.deep_sort = DeepSort(metric)
+        
         
         self.encoder = gdet.create_box_encoder(encoder_filename, batch_size=16)
         

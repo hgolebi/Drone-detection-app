@@ -43,12 +43,12 @@ if __name__ == '__main__':
     cap = cv.VideoCapture(cv.samples.findFile("Trackers/walk.mp4"))
 
     of = OpticalFlow()
-    obj_detector = ObjectDetector('yolov8s.pt')
+    obj_detector = ObjectDetector('Yolo/models/best.pt')
 
     ret, frame1 = cap.read()
     results1 = obj_detector.detect_objects(frame1)
     
-    while True:
+    while True: 
         ret, frame2 = cap.read()
         results2 = obj_detector.detect_objects(frame2)
 
