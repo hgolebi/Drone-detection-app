@@ -5,6 +5,7 @@ import torch
 import cv2
 import random
 from Detection.Yolo import model_dir
+import sys
 
 class ObjectTracking:
     def __init__(self, yolo_path=f'{model_dir}/best.pt', tracker=DeepSortTracker()):
@@ -65,12 +66,14 @@ class ObjectTracking:
     
 if __name__ == "__main__":
     ot = ObjectTracking()
-    ot.get_video('Detection/Trackers/walk.mp4')
+    if len(sys.argv) > 1:
+        ot.get_video(sys.argv[1])
+    else:
+        ot.get_video('Detection/Trackers/walk.mp4')
+    
 
         
     while ot.frame_returned:
         detect_tuple = ot.detect()
         ot.update_tracker(*detect_tuple)
         ot.write_video()
-
-    cv2.destroyAllWindows()
