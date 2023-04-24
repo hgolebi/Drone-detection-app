@@ -10,10 +10,10 @@ Gotowy model będzie działał jako aplikacja webowa, która umożliwi użytkown
 
 W aplikacji będzie również możliwość wyboru progu pewności, od którego chcemy, aby dron był zaznaczony ramką na filmie. Dzięki temu użytkownicy będą mogli dostosować wyniki detekcji do swoich potrzeb i wymagań.
 
-W projekcie korzystamy z różnych metod śledzenia obiektów, takie jak:
-•	metody bazujące na pokrywaniu się detekcji z określonym wskaźnikiem IoU, 
-•	SORT lub DeepSORT,
-•	wykrywanie dronów bazując na optycznym przepływie (optical flow) i identyfikacja wykrytych obiektów,
+W projekcie korzystamy z różnych metod śledzenia obiektów, takie jak:<br/>
+•	metody bazujące na pokrywaniu się detekcji z określonym wskaźnikiem IoU,<br/>
+•	SORT lub DeepSORT,<br/>
+•	wykrywanie dronów bazując na optycznym przepływie (optical flow) i identyfikacja wykrytych obiektów,<br/>
 •	metody śledzenia obiektu po cechach i wzorcach poruszania się
 
 Użytkownicy po wybraniu bądź wstawieniu filmu do detekcji będą mogli dokonać wyboru odnośnie tego, która metoda zostanie wykorzystana do śledzenia dronów. Dzięki temu mogą przetestować różne opcje oraz dostosować działanie programu do swoich potrzeb i wymagań.
