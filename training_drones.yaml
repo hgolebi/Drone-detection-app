@@ -1,7 +1,0 @@
-# path: dataset\
-train: C:/Users/user/Documents/STUDIA/SEM5/PZSP2/grupasledcza/dataset/train/images
-val: C:/Users/user/Documents/STUDIA/SEM5/PZSP2/grupasledcza/dataset/val/images
-test: 
-
-nc: 1
-names: ['drone']
