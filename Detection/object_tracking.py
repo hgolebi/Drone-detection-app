@@ -57,9 +57,12 @@ class ObjectTracking:
         # TODO
         self.tracker.update(boxes, scores, frame)
 
-    def run(self, frame_dillation):
+    def run(self, frame_dillation=None):
         # detect every x frames, update tracker, return video
-        pass
+        while ot.frame_returned:
+            detect_tuple = ot.detect()
+            ot.update_tracker(*detect_tuple)
+            ot.write_video()
     
     def next_frame(self):
         self.frame_returned, self.frame = self.video_in.read()
@@ -71,9 +74,4 @@ if __name__ == "__main__":
     else:
         ot.get_video('Detection/Trackers/walk.mp4')
     
-
-        
-    while ot.frame_returned:
-        detect_tuple = ot.detect()
-        ot.update_tracker(*detect_tuple)
-        ot.write_video()
+    ot.run()

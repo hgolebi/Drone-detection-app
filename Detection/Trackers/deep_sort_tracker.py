@@ -14,7 +14,7 @@ class DeepSortTracker(Tracker):
     """ Utilize DeepSort library with it's box encoder to track objects. """
     def __init__(self, metric=None, encoder_filename=f'{encoder_dir}\mars-small128.pb'):
         if metric is None:
-            metric = nn_matching.NearestNeighborDistanceMetric("cosine", 0.4)
+            metric = nn_matching.NearestNeighborDistanceMetric("cosine", 2)
         self.deep_sort = DeepSort(metric)
         
         
