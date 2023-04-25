@@ -24,8 +24,13 @@ class MainScreen extends React.Component {
         fetch(API_URL+'video/').then(response => response.json())
         .then(json => {
             this.setState({videos: json});
-            this.setState({vid_name: json[0]})
+            this.changeVideo(json[0])
         })
+    }
+
+    changeVideo(name) {
+        this.setState({vid_name: name})
+        this.setState({vid_group: 'video/'})
     }
 
     sendVideo(video) {
@@ -53,11 +58,11 @@ class MainScreen extends React.Component {
     }
 
     render(){
-        const thumbnail_list = this.state.videos.map((video, index) => (
-            <div className='tn_card' key={index}>
+        const thumbnail_list = this.state.videos.map((name, index) => (
+            <div className='tn_card' key={index} name={name} onClick={() => this.changeVideo(name)}>
                 <img
                     className='tn'
-                    src={API_URL+'thumbnail/'+video}
+                    src={API_URL+'thumbnail/'+name}
                     key={index}>
                     </img>
             </div>

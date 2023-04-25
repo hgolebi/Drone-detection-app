@@ -92,7 +92,7 @@ def show_thumb(name):
 
 @app.route('/tracking/<name>')
 def run_yolo(name):
-    as_att = 'attachment' in request.args
+    if_att = 'attachment' in request.args
     out_name = f"out_{name}"
     if not out_name in os.listdir(app.config['TRACKED_FOLDER']):
         if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
@@ -102,7 +102,7 @@ def run_yolo(name):
                     os.path.join(absolute_path, "tracked", out_name))
         ot.run()
 
-    return send_from_directory(app.config["TRACKED_FOLDER"], out_name, as_attachment=as_att)
+    return send_from_directory(app.config["TRACKED_FOLDER"], out_name, as_attachment=if_att)
 
 # @app.route('/download/<name>')
 # def download_file(name):
