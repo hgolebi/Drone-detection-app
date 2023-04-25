@@ -88,7 +88,7 @@ def show_thumb(name):
     return send_from_directory('./thumbnails', thumb_name)
 
 
-@app.route('/tracked/<name>')
+@app.route('/tracking/<name>')
 def run_yolo(name):
     if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
         abort(404)
