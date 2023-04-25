@@ -18,7 +18,7 @@ W aplikacji będzie również możliwość wyboru progu pewności, od którego c
 
 W projekcie korzystamy z różnych metod śledzenia obiektów, takie jak:<br/>
 •	metody śledzenia SORT, DeepSORT,<br/>
-•	metody śledzenia obiektu po cechach i wzorcach poruszania się takie jak CSRT, MEDIANFLOW, KCF 
+•	metody śledzenia obiektu po cechach i wzorcach poruszania się takie jak CSRT, MEDIANFLOW, KCF<br/>
 •	wykrywanie dronów bazując na optycznym przepływie (optical flow) i identyfikacja wykrytych obiektów,<br/>
 
 
