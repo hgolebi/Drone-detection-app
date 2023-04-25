@@ -10,6 +10,8 @@ class MainScreen extends React.Component {
         super(props);
         this.state = {
             videos: [],
+            vid_group: 'video/',
+            vid_name: null,
         }
     }
 
@@ -22,11 +24,9 @@ class MainScreen extends React.Component {
         fetch(API_URL+'video/').then(response => response.json())
         .then(json => {
             this.setState({videos: json});
-            // console.log(json);
-            console.log(this.state)
+            this.setState({vid_name: json[0]})
         })
     }
-
 
     sendVideo(video) {
         const videoData = new FormData();
@@ -48,6 +48,9 @@ class MainScreen extends React.Component {
         this.sendVideo(file);
     }
 
+    train = () => {
+        this.setState({vid_group: 'tracking/'});
+    }
 
     render(){
         const thumbnail_list = this.state.videos.map((video, index) => (
@@ -63,13 +66,11 @@ class MainScreen extends React.Component {
             <div id="main_screen">
                 <div id="video_container">
                     <video id='video' controls
-                        src='./videos/vid.mp4' type='video/mp4'>
+                        src={API_URL+this.state.vid_group+this.state.vid_name} type='video/mp4'>
                     </video>
                 </div>
                 <div id="buttons_container">
-                    <button id="slow" onClick={pass}>slow</button>
-                    <button id="fast" onClick={pass}>fast</button>
-                    <button id="flow" onClick={pass}>flow</button>
+                    <button id="train" onClick={this.train}>train</button>
                     <input type='range'></input>
                     <button id="download" onClick>download</button>
                 </div>
