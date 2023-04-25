@@ -3,18 +3,21 @@ from flask import Flask, flash, request, redirect, url_for, send_from_directory,
 from flask import abort, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-from backend import thumbnails
+import thumbnails
 from Detection import object_tracking
 import time
 
 absolute_path = os.path.dirname(os.path.realpath(__file__))
 
 UPLOAD_FOLDER = os.path.join(absolute_path, './uploads')
+TRACKED_FOLDER = os.path.join(absolute_path, './tracked')
+
 ALLOWED_EXTENSIONS = {'mp4', 'mov'}
 
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['TRACKED_FOLDER'] = TRACKED_FOLDER
 CORS(app)
 
 
@@ -89,15 +92,17 @@ def show_thumb(name):
 
 @app.route('/tracking/<name>')
 def run_yolo(name):
-    if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
-        abort(404)
+    as_att = 'attachment' in request.args
     out_name = f"out_{name}"
-    ot = object_tracking.ObjectTracking()
-    ot.get_video(os.path.join(app.config["UPLOAD_FOLDER"], name),
-                 os.path.join(absolute_path, "tracked", out_name))
-    ot.run()
+    if not out_name in os.listdir(app.config['TRACKED_FOLDER']):
+        if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
+            abort(404)
+        ot = object_tracking.ObjectTracking()
+        ot.get_video(os.path.join(app.config["UPLOAD_FOLDER"], name),
+                    os.path.join(absolute_path, "tracked", out_name))
+        ot.run()
 
-    return send_from_directory(app.config["UPLOAD_FOLDER"], out_name, as_attachment=True)
+    return send_from_directory(app.config["TRACKED_FOLDER"], out_name, as_attachment=as_att)
 
 # @app.route('/download/<name>')
 # def download_file(name):

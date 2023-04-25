@@ -22,7 +22,7 @@ class ObjectTracking:
         self.next_frame()
 
         self.cap_out = cv2.VideoWriter(video_path_out, cv2.VideoWriter_fourcc(
-            *'mp4v'), self.video_in.get(cv2.CAP_PROP_FPS), (self.frame.shape[1], self.frame.shape[0]))
+            *'h264'), self.video_in.get(cv2.CAP_PROP_FPS), (self.frame.shape[1], self.frame.shape[0]))
         self.colors = [(random.randint(0, 255), random.randint(
             0, 255), random.randint(0, 255)) for _ in range(10)]
 

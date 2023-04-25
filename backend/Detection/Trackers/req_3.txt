@@ -1,0 +1,8 @@
+tqdm==4.65.0
+typing_extensions==4.5.0
+ultralytics==8.0.58
+urllib3==1.26.15
+Werkzeug==2.2.3
+wrapt==1.14.1
+yacs==0.1.8
+zipp==3.15.0
