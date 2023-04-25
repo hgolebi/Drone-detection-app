@@ -3,22 +3,27 @@ from flask import Flask, flash, request, redirect, url_for, send_from_directory,
 from flask import abort, jsonify
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-import thumbnails
+from backend import thumbnails
+from Detection import object_tracking
+import time
 
-UPLOAD_FOLDER = './uploads'
+absolute_path = os.path.dirname(os.path.realpath(__file__))
+
+UPLOAD_FOLDER = os.path.join(absolute_path, './uploads')
 ALLOWED_EXTENSIONS = {'mp4', 'mov'}
+
 
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 CORS(app)
 
+
 @app.route("/")
 def hello_word():
     title = "GRUPA ŚLEDCZA"
-    videos = os.listdir("./uploads/")
+    videos = os.listdir(os.path.join(absolute_path, "./uploads/"))
     videos = [v for v in videos if v.endswith(tuple(ALLOWED_EXTENSIONS))]
-
-    return render_template('./index.html', title=title, videos=videos)
+    return render_template('index.html', title=title, videos=videos)
 # """<p>hello world</p>
 #     <a href=./upload/> Dodaj wideo </a>
 #     """
@@ -58,9 +63,6 @@ def upload_file():
     '''
 
 
-
-
-
 @app.route('/video/')
 def show_videos():
     video_list = os.listdir(app.config["UPLOAD_FOLDER"])
@@ -83,6 +85,20 @@ def show_thumb(name):
     thumb_name = thumbnails.thumbnail_name(name)
     thumbnails.check_thumbnail(name)
     return send_from_directory('./thumbnails', thumb_name)
+
+
+@app.route('/tracking/<name>')
+def run_yolo(name):
+    if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
+        abort(404)
+    out_name = f"out_{name}"
+    ot = object_tracking.ObjectTracking()
+    ot.get_video(os.path.join(app.config["UPLOAD_FOLDER"], name),
+                 os.path.join(absolute_path, "tracked", out_name))
+    ot.run()
+
+    return send_from_directory(app.config["UPLOAD_FOLDER"], out_name, as_attachment=True)
+
 # @app.route('/download/<name>')
 # def download_file(name):
 #     return send_from_directory(app.config["UPLOAD_FOLDER"], name)

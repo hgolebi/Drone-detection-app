@@ -2,8 +2,9 @@ import os
 import subprocess
 import cv2
 
-UPLOAD_FOLDER = './uploads/'
-THUMBNAIL_FOLDER = './thumbnails/'
+absolute_path = os.path.dirname(os.path.realpath(__file__))
+UPLOAD_FOLDER = os.path.join(absolute_path, './uploads')
+THUMBNAIL_FOLDER = os.path.join(absolute_path, './thumbnails')
 
 
 def thumbnail_name(videoname: str):
