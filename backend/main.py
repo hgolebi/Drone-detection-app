@@ -23,8 +23,7 @@ def hello_word():
     title = "GRUPA ŚLEDCZA"
     videos = os.listdir(os.path.join(absolute_path, "./uploads/"))
     videos = [v for v in videos if v.endswith(tuple(ALLOWED_EXTENSIONS))]
-
-    return render_template(os.path.join(absolute_path, "templates", '/index.html'), title=title, videos=videos)
+    return render_template('index.html', title=title, videos=videos)
 # """<p>hello world</p>
 #     <a href=./upload/> Dodaj wideo </a>
 #     """
