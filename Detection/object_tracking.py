@@ -6,6 +6,7 @@ import cv2
 import random
 from Detection.Yolo import model_dir
 import sys
+from io import StringIO
 
 class ObjectTracking:
     def __init__(self, yolo_path=f'{model_dir}/best.pt', tracker=DeepSortTracker()):
@@ -15,6 +16,8 @@ class ObjectTracking:
         
         self.tracker = tracker
         # TODO tracker choose option or sth
+        self.adnotations = []
+        self.frame_counter = 0
         
     def get_video(self, video_path_in, video_path_out='out.mp4'):
         self.video_in = cv2.VideoCapture(video_path_in)
@@ -26,6 +29,7 @@ class ObjectTracking:
     def write_video(self):
         for track in ot.tracker.tracks:
             x1, y1, x2, y2 = track.bbox
+            self.adnotations.append([self.frame_counter, track.track_id, x1, y1, x2, y2])
             cv2.rectangle(self.frame, (int(x1), int(y1)), (int(x2), int(y2)), (self.colors[track.track_id % len(self.colors)]), 3)
         
         self.cap_out.write(self.frame)
@@ -63,9 +67,18 @@ class ObjectTracking:
             detect_tuple = ot.detect()
             ot.update_tracker(*detect_tuple)
             ot.write_video()
+        
+        self.save_adnotations()
     
     def next_frame(self):
         self.frame_returned, self.frame = self.video_in.read()
+        self.frame_counter += 1
+    
+    def save_adnotations(self):
+        self.text_file = StringIO()
+        for item in self.adnotations:
+            self.text_file.write(', '.join(str(num) for num in item) + '\n')
+        self.text_file.seek(0)
     
 if __name__ == "__main__":
     ot = ObjectTracking()
