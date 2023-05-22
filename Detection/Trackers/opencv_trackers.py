@@ -30,7 +30,6 @@ class OpenCVTracker(Tracker):
         self.trackers.update(frame)
         # print(self.trackers.getObjects())
         self.remove_unused(frame)
-        
         self.tracks = self.get_bboxes()
 
         
@@ -43,7 +42,7 @@ class OpenCVTracker(Tracker):
                 tracker = self.tracker_type()
                 self.trackers.add(tracker, frame, new_bbox)
     
-    def box_over_threshold(self, bbox, bboxes, threshold = .4):
+    def box_over_threshold(self, bbox, bboxes, threshold = 0):
         """ Check if IOU is over set threshold """
         x, y, w, h = bbox
         bboxes = np.array(bboxes) # x1, y1, w1, h1
