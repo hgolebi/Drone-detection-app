@@ -13,12 +13,27 @@ class OpenCVTracker(Tracker):
     def __init__(self, name='CSRT'):
         self.trackers = cv2.legacy.MultiTracker_create()
         self.tracker_type = self.names[name]
+        
+        self.frame_check = 0
+        self.last_trackers = np.array([])
+        self.last_trackers_count = []
     
     def update(self, bboxes, scores, frame):
         """ Update trackers and return new Track objects """
-        self.update_trackers(bboxes, frame)
+        self.frame_check += 1
+        if self.frame_check == 1:
+            self.update_trackers(bboxes, frame)
+        elif self.frame_check == 3:
+            self.frame_check = 0
+        
+        
         self.trackers.update(frame)
+        # print(self.trackers.getObjects())
+        self.remove_unused(frame)
+        
         self.tracks = self.get_bboxes()
+
+        
 
     def update_trackers(self, bboxes, frame):
         """Check IOU of newly detected bboxes """
@@ -45,12 +60,23 @@ class OpenCVTracker(Tracker):
         union_area = w*h + bboxes[possible_idx, 2] * bboxes[possible_idx, 3] - intersection_area
         return np.any(intersection_area/union_area > threshold)
             
-    # def remove_unused(self):
-    #     arr = np.array(self.trackers.getObjects())
-    #     mask = (arr >= 0).all(axis=1)
-    #     idx = np.where(mask)[0]
+    def remove_unused(self, frame):
+        trackers_arr = np.array(self.trackers.getObjects())
+        arr1_shape = trackers_arr.shape[0]
+        arr2_shape = self.last_trackers.shape[0]
         
-    #     trackers = []
+        if arr1_shape > 0 and arr2_shape > 0 and arr1_shape == arr2_shape:
+            comparison = np.all(np.isclose(trackers_arr, self.last_trackers, atol=.1), axis=1)
+            idx = np.where(comparison, 1, 0)
+            self.trackers = cv2.legacy.MultiTracker_create()
+            print(idx, trackers_arr)
+            for i, tracker_value in zip(idx, trackers_arr):
+                if i == 0:
+                    tracker = self.tracker_type()
+                    self.trackers.add(tracker, frame, tuple(tracker_value))
+        
+        self.last_trackers = np.array(self.trackers.getObjects())
+
             
     
     def get_bboxes(self):
