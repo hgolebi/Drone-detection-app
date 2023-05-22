@@ -1,8 +1,9 @@
 import os
 import subprocess
 
-UPLOAD_FOLDER = './uploads'
-THUMBNAIL_FOLDER = './thumbnails'
+absolute_path = os.path.dirname(os.path.realpath(__file__))
+UPLOAD_FOLDER = os.path.join(absolute_path, './uploads')
+THUMBNAIL_FOLDER = os.path.join(absolute_path, './thumbnails')
 
 
 def thumbnail_name(videoname: str):
@@ -22,4 +23,4 @@ def check_thumbnail(videname: str):
         generate_thumbnail(videname, 100)
 
 
-check_thumbnail("film.mp4")
+# check_thumbnail("film.mp4")
