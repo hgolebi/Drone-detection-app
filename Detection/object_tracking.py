@@ -10,16 +10,22 @@ from io import StringIO
 
 
 class ObjectTracking:
-    def __init__(self, yolo_path=f'{model_dir}/best.pt', tracker=DeepSortTracker()):
+    def __init__(self, name='', yolo_path=f'{model_dir}/best.pt'):
         self.yolo = YOLO(yolo_path)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.yolo.to(device)
 
-        self.tracker = tracker
-        # TODO tracker choose option or sth
+        self.tracker = self.get_tracker(name)
         self.adnotations = []
         self.frame_counter = 0
+        self.object_counter = 0
         
+    def get_tracker(self, name):
+        tracker_dict = {'deepsort': DeepSortTracker(), 'sort': SortTracker(),
+                        'kcf': OpenCVTracker('KCF'), 'medianflow': OpenCVTracker('MEDIANFLOW'),
+                        'csrt': OpenCVTracker()}
+        return tracker_dict.get(name.lower(), DeepSortTracker())
+
     def get_video(self, video_path_in, video_path_out='out.mp4'):
         self.video_in = cv2.VideoCapture(video_path_in)
         self.next_frame()
@@ -34,13 +40,13 @@ class ObjectTracking:
             x1, y1, x2, y2 = track.bbox
             self.adnotations.append([self.frame_counter, track.track_id, x1, y1, x2, y2])
             cv2.rectangle(self.frame, (int(x1), int(y1)), (int(x2), int(y2)), (self.colors[track.track_id % len(self.colors)]), 3)
+            self.object_counter = track.track_id
         
         self.cap_out.write(self.frame)
 
     def detect(self, threshold=.5):
         current_frame = self.frame
         [results] = self.yolo(current_frame)
-
         boxes = []
         scores = []
         for box, score, cls in zip(results.boxes.xyxy, results.boxes.conf, results.boxes.cls):
@@ -50,13 +56,11 @@ class ObjectTracking:
                 boxes.append(self.yolo_box_to_box(box))
                 scores.append(score)
 
-        # TODO filter classes ?
 
         self.next_frame()
         return boxes, scores, current_frame
 
     def yolo_box_to_box(self, box):
-        # TODO refactor maybe
         return box[0], box[1], box[2] - box[0], box[3] - box[1]
 
     def update_tracker(self, boxes, scores, frame):
@@ -65,10 +69,10 @@ class ObjectTracking:
 
     def run(self, frame_dillation=None):
         # detect every x frames, update tracker, return video
-        while ot.frame_returned:
-            detect_tuple = ot.detect()
-            ot.update_tracker(*detect_tuple)
-            ot.write_video()
+        while self.frame_returned:
+            detect_tuple = self.detect()
+            self.update_tracker(*detect_tuple)
+            self.write_video()
         
         self.save_adnotations()
         self.video_in.release()
