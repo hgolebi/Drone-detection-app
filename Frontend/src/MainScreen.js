@@ -10,7 +10,7 @@ class MainScreen extends React.Component {
         super(props);
         this.state = {
             videos: [],
-            vid_group: 'video/',
+            vid_group: 'videos/',
             vid_name: null,
         }
     }
@@ -21,7 +21,7 @@ class MainScreen extends React.Component {
     }
 
     getVideos()  {
-        fetch(API_URL+'video/').then(response => response.json())
+        fetch(API_URL+'videos').then(response => response.json())
         .then(json => {
             this.setState({videos: json});
             this.changeVideo(json[0])
@@ -30,13 +30,13 @@ class MainScreen extends React.Component {
 
     changeVideo(name) {
         this.setState({vid_name: name})
-        this.setState({vid_group: 'video/'})
+        this.setState({vid_group: 'videos/'})
     }
 
     sendVideo(video) {
         const videoData = new FormData();
         videoData.append('file', video, video.name);
-        fetch(API_URL+'upload/', {
+        fetch(API_URL+'videos', {
           method: 'POST',
           body: videoData
         })
@@ -54,7 +54,7 @@ class MainScreen extends React.Component {
     }
 
     train = () => {
-        this.setState({vid_group: 'tracking/'});
+        this.setState({vid_group: 'processed_videos/'});
     }
 
     render(){
@@ -62,7 +62,7 @@ class MainScreen extends React.Component {
             <div className='tn_card' key={index} name={name} onClick={() => this.changeVideo(name)}>
                 <img
                     className='tn'
-                    src={API_URL+'thumbnail/'+name}
+                    src={API_URL+'thumbnails/'+name}
                     key={index}>
                     </img>
             </div>
