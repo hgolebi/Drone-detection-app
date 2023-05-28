@@ -16,7 +16,6 @@ class OpenCVTracker(Tracker):
         
         self.frame_check = 0
         self.last_trackers = np.array([])
-        self.last_trackers_count = []
     
     def update(self, bboxes, scores, frame):
         """ Update trackers and return new Track objects """
@@ -42,22 +41,23 @@ class OpenCVTracker(Tracker):
                 tracker = self.tracker_type()
                 self.trackers.add(tracker, frame, new_bbox)
     
-    def box_over_threshold(self, bbox, bboxes, threshold = 0):
-        """ Check if IOU is over set threshold """
-        x, y, w, h = bbox
-        bboxes = np.array(bboxes) # x1, y1, w1, h1
-        x_left = np.maximum(bboxes[:, 0], x)
-        y_top = np.maximum(bboxes[:, 1], y)
-        x_right = np.minimum(x + w, bboxes[:, 0] + bboxes[:, 2])
-        y_bottom = np.minimum(y + h, bboxes[:, 1] + bboxes[:, 3])
+    # TODO remove
+    # def box_over_threshold(self, bbox, bboxes, threshold = 0):
+    #     """ Check if IOU is over set threshold """
+    #     x, y, w, h = bbox
+    #     bboxes = np.array(bboxes) # x1, y1, w1, h1
+    #     x_left = np.maximum(bboxes[:, 0], x)
+    #     y_top = np.maximum(bboxes[:, 1], y)
+    #     x_right = np.minimum(x + w, bboxes[:, 0] + bboxes[:, 2])
+    #     y_bottom = np.minimum(y + h, bboxes[:, 1] + bboxes[:, 3])
         
-        intersection_area = (x_right - x_left) * (y_bottom - y_top)
+    #     intersection_area = (x_right - x_left) * (y_bottom - y_top)
         
-        possible_idx = intersection_area>0
-        intersection_area = intersection_area[possible_idx]
+    #     possible_idx = intersection_area>0
+    #     intersection_area = intersection_area[possible_idx]
 
-        union_area = w*h + bboxes[possible_idx, 2] * bboxes[possible_idx, 3] - intersection_area
-        return np.any(intersection_area/union_area > threshold)
+    #     union_area = w*h + bboxes[possible_idx, 2] * bboxes[possible_idx, 3] - intersection_area
+    #     return np.any(intersection_area/union_area > threshold)
             
     def remove_unused(self, frame):
         trackers_arr = np.array(self.trackers.getObjects())

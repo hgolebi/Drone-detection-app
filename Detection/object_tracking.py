@@ -1,4 +1,5 @@
 from Trackers.opencv_trackers import OpenCVTracker
+from Trackers.optical_flow import OpticalFlow
 from Trackers.deep_sort_tracker import DeepSortTracker, SortTracker
 from ultralytics import YOLO
 import torch
@@ -21,15 +22,18 @@ class ObjectTracking:
         self.object_counter = 0
         
     def get_tracker(self, name):
-        tracker_dict = {'deepsort': DeepSortTracker(), 'sort': SortTracker(),
-                        'kcf': OpenCVTracker('KCF'), 'medianflow': OpenCVTracker('MEDIANFLOW'),
-                        'csrt': OpenCVTracker()}
-        return tracker_dict.get(name.lower(), DeepSortTracker())
+        tracker_dict = {
+            'deepsort': DeepSortTracker(), 'sort': SortTracker(),
+            'kcf': OpenCVTracker('KCF'), 'medianflow': OpenCVTracker('MEDIANFLOW'), 'csrt': OpenCVTracker(),
+            'optical_flow': OpticalFlow()
+        }
+        return tracker_dict.get(name.lower(), OpenCVTracker())
 
     def get_video(self, video_path_in, video_path_out='out.mp4'):
         self.video_in = cv2.VideoCapture(video_path_in)
         self.next_frame()
 
+        # TODO return fps
         self.cap_out = cv2.VideoWriter(video_path_out, cv2.VideoWriter_fourcc(
             *'mp4v'), self.video_in.get(cv2.CAP_PROP_FPS), (self.frame.shape[1], self.frame.shape[0]))
         self.colors = [(random.randint(0, 255), random.randint(
@@ -44,7 +48,12 @@ class ObjectTracking:
         
         self.cap_out.write(self.frame)
 
-    def detect(self, threshold=.5):
+    def detect(self, threshold=.3):
+        if isinstance(self.tracker, OpticalFlow):
+            self.next_frame()
+            return None, None, self.frame
+        
+        #TODO threshold to self.
         current_frame = self.frame
         [results] = self.yolo(current_frame)
         boxes = []
@@ -88,7 +97,7 @@ class ObjectTracking:
         self.text_file.seek(0)
     
 if __name__ == "__main__":
-    ot = ObjectTracking()
+    ot = ObjectTracking(name='optical_flow')
     if len(sys.argv) > 1:
         ot.get_video(sys.argv[1])
     else:
