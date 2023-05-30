@@ -17,9 +17,9 @@ class DeepSortTracker(Tracker):
     def __init__(self, metric=None, encoder_filename=f'{encoder_dir}/mars-small128.pb'):
         if metric is None:
             metric = nn_matching.NearestNeighborDistanceMetric("cosine", 2)
-        self.deep_sort = DeepSort(metric)
+        self.deep_sort = DeepSort(metric, 2, n_init=2)
 
-        self.encoder = gdet.create_box_encoder(encoder_filename, batch_size=16)
+        self.encoder = gdet.create_box_encoder(encoder_filename, batch_size=1)
 
     def update(self, bboxes, scores, frame):
         """ Update tracker using bboxes with standard xywh format (not YOLO xywh format!)"""
@@ -39,7 +39,7 @@ class DeepSortTracker(Tracker):
         """ Create Track objects from confirmed tracks  """
         tracks = []
         for track in self.deep_sort.tracks:
-            if not track.is_confirmed() or track.time_since_update > 1:
+            if not track.is_confirmed() or track.time_since_update > 2:
                 continue
             bbox = track.to_tlbr()
             id = track.track_id
@@ -53,7 +53,7 @@ class SortTracker(Tracker):
     """ Utilize Sort library to track objects """
 
     def __init__(self):
-        self.sort = Sort(max_age=1, min_hits=3, iou_threshold=0.6)
+        self.sort = Sort(max_age=2, min_hits=2, iou_threshold=3)
         self.tracks = []
 
     def update(self, bboxes, scores, frame=None):

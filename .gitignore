@@ -1,8 +1,4 @@
 .vscode
-__pycache__
-*.jpg
-*.mp4
-.vscode
 *.pyc
 backend/uploads/*
 backend/thumbnails/*
