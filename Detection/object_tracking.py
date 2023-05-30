@@ -48,11 +48,7 @@ class ObjectTracking:
         
         self.cap_out.write(self.frame)
 
-    def detect(self, threshold=.3):
-        if isinstance(self.tracker, OpticalFlow):
-            self.next_frame()
-            return None, None, self.frame
-        
+    def detect(self, threshold=.45):
         #TODO threshold to self.
         current_frame = self.frame
         [results] = self.yolo(current_frame)
@@ -61,7 +57,10 @@ class ObjectTracking:
         for box, score, cls in zip(results.boxes.xyxy, results.boxes.conf, results.boxes.cls):
             score = score.item()
             box = [int(item) for item in box]
+            print(score)
             if score > threshold:
+                print(box)
+                print(self.yolo_box_to_box(box))
                 boxes.append(self.yolo_box_to_box(box))
                 scores.append(score)
 

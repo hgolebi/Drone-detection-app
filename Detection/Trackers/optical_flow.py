@@ -20,36 +20,48 @@ class OpticalFlow(Tracker):
             # TODO refactor flow call
             flow = self.calculate_flow(self.last_frame, self.curr_frame)
             new_bboxes = self.get_bbox_from_flow(flow)
-            self.compare_boxes(new_bboxes)
+            self.compare_boxes(new_bboxes, bboxes)
             print(self.tracks)
         else:
             self.last_frame = self.convert_frame_to_gray(frame)
     
     def get_bbox_from_flow(self, flow_map):
+        """ return xywh bbox from flow """
         magnitude, _ = cv.cartToPolar(flow_map[..., 0], flow_map[..., 1])
-        filtered_magnitude = magnitude > 2
+        filtered_magnitude = magnitude > 5
         contours, _ = cv.findContours(filtered_magnitude.astype(np.uint8), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        bounding_boxes = [cv.boundingRect(contour) for contour in contours]
+        bounding_boxes = np.array([cv.boundingRect(contour) for contour in contours])
+        if bounding_boxes.ndim == 2:
+            bounding_boxes = bounding_boxes[np.all(bounding_boxes>10, axis=1)]
+            print(bounding_boxes)
         
-        bounding_boxes = [(x1, y1, x1+x2, y1+y2) for (x1, y1, x2, y2) in bounding_boxes]
-        return bounding_boxes
+        # bounding_boxes = [(x1, y1, x1+x2, y1+y2) for (x1, y1, x2, y2) in bounding_boxes]
+        return np.array(bounding_boxes)
     
-    def compare_boxes(self, bounding_boxes):
-        if self.tracks == []:
-            self.tracks = [Track(self.get_id(), box) for box in bounding_boxes]
-        else:
+    def compare_boxes(self, bounding_boxes, yolo_bboxes=None):
+        """ bounding_boxes xywh, yolo_bboxes xywh, Track in xyxy """
+        if self.tracks == [] and yolo_bboxes is not None and yolo_bboxes != []:
+            self.tracks = [Track(self.get_id(), box) for box in self.xywh_to_xyxy(np.array(yolo_bboxes))]
+        elif self.tracks != [] and bounding_boxes.ndim == 2:
             new_tracks = []
-            curr_tracks = [track.bbox for track in self.tracks]
+            curr_bboxes = [track.get_xywh() for track in self.tracks]
             ids_found = set()
-            for bbox in bounding_boxes:
-                bbox_found = self.box_over_threshold(bbox, curr_tracks, threshold=.05, get_idx=True)
-                if bbox_found is not None:
-                    if self.tracks[bbox_found].track_id not in ids_found:
-                        new_tracks.append(Track(self.tracks[bbox_found].track_id, bbox))
-                        ids_found.add(self.tracks[bbox_found].track_id)
-                else:
-                    new_tracks.append(Track(self.get_id(), bbox))
-            self.tracks = new_tracks
+            
+            for bbox, track_bbox in zip(bounding_boxes, self.xywh_to_xyxy(bounding_boxes)):
+                bbox_found = self.box_over_threshold(bbox, curr_bboxes, threshold=.4, get_idx=True)
+                if bbox_found is not None and self.tracks[bbox_found].track_id not in ids_found:
+                    new_tracks.append(Track(self.tracks[bbox_found].track_id, track_bbox))
+                    ids_found.add(self.tracks[bbox_found].track_id)
+                elif yolo_bboxes is not None and len(yolo_bboxes) != 0 and self.box_over_threshold(bbox, yolo_bboxes, threshold=0.7):
+                    new_tracks.append(Track(self.get_id(), track_bbox))
+            
+            for track in self.tracks:
+                if track.track_id not in ids_found:
+                    track.last_updated += 1
+                    if track.last_updated < 3:
+                        new_tracks.append(track)
+            
+            self.tracks = sorted(new_tracks, key=lambda t: t.track_id)
     
     def convert_frame_to_gray(self, frame):
         """converts frame from RGB to GRAY color"""
