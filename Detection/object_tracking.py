@@ -51,21 +51,17 @@ class ObjectTracking:
     def detect(self, threshold=.45):
         #TODO threshold to self.
         current_frame = self.frame
-        [results] = self.yolo(current_frame)
+        [results] = self.yolo(current_frame.copy())
         boxes = []
         scores = []
         for box, score, cls in zip(results.boxes.xyxy, results.boxes.conf, results.boxes.cls):
             score = score.item()
             box = [int(item) for item in box]
-            print(score)
             if score > threshold:
-                print(box)
-                print(self.yolo_box_to_box(box))
                 boxes.append(self.yolo_box_to_box(box))
                 scores.append(score)
 
 
-        self.next_frame()
         return boxes, scores, current_frame
 
     def yolo_box_to_box(self, box):
@@ -81,6 +77,7 @@ class ObjectTracking:
             detect_tuple = self.detect()
             self.update_tracker(*detect_tuple)
             self.write_video()
+            self.next_frame()
         
         self.save_adnotations()
         self.video_in.release()

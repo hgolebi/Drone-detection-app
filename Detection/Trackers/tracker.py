@@ -24,6 +24,8 @@ class Tracker(ABC):
     
     def box_over_threshold(self, bbox, bboxes, threshold = 0, get_idx=False):
         """ Check if IOU is over set threshold """
+        # print(bbox)
+        # print(bboxes)
         x, y, w, h = bbox
         bboxes = np.array(bboxes) # x1, y1, w1, h1
         x_left = np.maximum(bboxes[:, 0], x)
@@ -42,6 +44,7 @@ class Tracker(ABC):
         
         if np.any(iou > 1) :
             raise ValueError(1)
+        # print(iou)
         if get_idx:
             indices = np.where(possible_idx)[0]
             idx_found = np.where(iou > threshold)[0]
