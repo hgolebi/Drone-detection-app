@@ -11,7 +11,7 @@ from io import StringIO
 
 
 class ObjectTracking:
-    def __init__(self, name='', yolo_path=f'{model_dir}/best.pt'):
+    def __init__(self, name='', threshold=.45, yolo_path=f'{model_dir}/best.pt'):
         self.yolo = YOLO(yolo_path)
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.yolo.to(device)
@@ -20,6 +20,10 @@ class ObjectTracking:
         self.adnotations = []
         self.frame_counter = 0
         self.object_counter = 0
+        
+        if 0 > threshold > 1:
+            raise ValueError(f'Threshold {threshold} not in [0,1]')
+        self.threshold = threshold
         
     def get_tracker(self, name):
         tracker_dict = {
@@ -33,9 +37,10 @@ class ObjectTracking:
         self.video_in = cv2.VideoCapture(video_path_in)
         self.next_frame()
 
-        # TODO return fps
         self.cap_out = cv2.VideoWriter(video_path_out, cv2.VideoWriter_fourcc(
             *'mp4v'), self.video_in.get(cv2.CAP_PROP_FPS), (self.frame.shape[1], self.frame.shape[0]))
+        self.fps = self.video_in.get(cv2.CAP_PROP_FPS)
+        
         self.colors = [(random.randint(0, 255), random.randint(
             0, 255), random.randint(0, 255)) for _ in range(10)]
 
@@ -48,16 +53,15 @@ class ObjectTracking:
         
         self.cap_out.write(self.frame)
 
-    def detect(self, threshold=.45):
-        #TODO threshold to self.
+    def detect(self):
         current_frame = self.frame
         [results] = self.yolo(current_frame.copy())
         boxes = []
         scores = []
-        for box, score, cls in zip(results.boxes.xyxy, results.boxes.conf, results.boxes.cls):
+        for box, score, _ in zip(results.boxes.xyxy, results.boxes.conf, results.boxes.cls):
             score = score.item()
             box = [int(item) for item in box]
-            if score > threshold:
+            if score > self.threshold:
                 boxes.append(self.yolo_box_to_box(box))
                 scores.append(score)
 
@@ -68,11 +72,9 @@ class ObjectTracking:
         return box[0], box[1], box[2] - box[0], box[3] - box[1]
 
     def update_tracker(self, boxes, scores, frame):
-        # TODO
         self.tracker.update(boxes, scores, frame)
 
-    def run(self, frame_dillation=None):
-        # detect every x frames, update tracker, return video
+    def run(self):
         while self.frame_returned:
             detect_tuple = self.detect()
             self.update_tracker(*detect_tuple)
@@ -81,6 +83,8 @@ class ObjectTracking:
         
         self.save_adnotations()
         self.video_in.release()
+        
+        return self.text_file
     
     def next_frame(self):
         self.frame_returned, self.frame = self.video_in.read()
@@ -93,10 +97,10 @@ class ObjectTracking:
         self.text_file.seek(0)
     
 if __name__ == "__main__":
-    ot = ObjectTracking(name='optical_flow')
+    ot = ObjectTracking(name='CSRT')
     if len(sys.argv) > 1:
         ot.get_video(sys.argv[1])
     else:
-        ot.get_video('Detection/Trackers/walk.mp4')
+        ot.get_video('./walk.mp4')
     
-    ot.run()
+    print(ot.run().read())

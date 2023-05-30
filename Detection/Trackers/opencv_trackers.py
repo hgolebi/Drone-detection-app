@@ -27,7 +27,6 @@ class OpenCVTracker(Tracker):
         
         
         self.trackers.update(frame)
-        # print(self.trackers.getObjects())
         self.remove_unused(frame)
         self.tracks = self.get_bboxes()
 
@@ -40,24 +39,6 @@ class OpenCVTracker(Tracker):
             if len(current_boxes) == 0 or not self.box_over_threshold(new_bbox, current_boxes):
                 tracker = self.tracker_type()
                 self.trackers.add(tracker, frame, new_bbox)
-    
-    # TODO remove
-    # def box_over_threshold(self, bbox, bboxes, threshold = 0):
-    #     """ Check if IOU is over set threshold """
-    #     x, y, w, h = bbox
-    #     bboxes = np.array(bboxes) # x1, y1, w1, h1
-    #     x_left = np.maximum(bboxes[:, 0], x)
-    #     y_top = np.maximum(bboxes[:, 1], y)
-    #     x_right = np.minimum(x + w, bboxes[:, 0] + bboxes[:, 2])
-    #     y_bottom = np.minimum(y + h, bboxes[:, 1] + bboxes[:, 3])
-        
-    #     intersection_area = (x_right - x_left) * (y_bottom - y_top)
-        
-    #     possible_idx = intersection_area>0
-    #     intersection_area = intersection_area[possible_idx]
-
-    #     union_area = w*h + bboxes[possible_idx, 2] * bboxes[possible_idx, 3] - intersection_area
-    #     return np.any(intersection_area/union_area > threshold)
             
     def remove_unused(self, frame):
         trackers_arr = np.array(self.trackers.getObjects())
@@ -68,7 +49,6 @@ class OpenCVTracker(Tracker):
             comparison = np.all(np.isclose(trackers_arr, self.last_trackers, atol=.1), axis=1)
             idx = np.where(comparison, 1, 0)
             self.trackers = cv2.legacy.MultiTracker_create()
-            print(idx, trackers_arr)
             for i, tracker_value in zip(idx, trackers_arr):
                 if i == 0:
                     tracker = self.tracker_type()

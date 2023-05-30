@@ -1,5 +1,6 @@
 import numpy as np
 import cv2 as cv
+from random import random
 from tracker import Tracker, Track
 
 class OpticalFlow(Tracker):
@@ -70,36 +71,31 @@ class OpticalFlow(Tracker):
     
     def calculate_flow(self, frame_prev, frame_next):
         """calculates optical flow based on two RGB frames"""
-        # frame_prev = self.convert_frame_to_gray(frame_prev)
-        # frame_next = self.convert_frame_to_gray(frame_next)
+
         return cv.calcOpticalFlowFarneback(frame_prev, frame_next, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-    # def map_flow(self, flow):
-    #     """maps flow on rgb frame with shape as input frames"""
-    #     mag, ang = cv.cartToPolar(flow[..., 0], flow[..., 1])
-    #     hsv = np.zeros(shape=(*ang.shape, 3), dtype=np.uint8)
-    #     hsv[..., 0] = ang*180/np.pi/2
-    #     hsv[..., 1] = 255
-    #     hsv[..., 2] = cv.normalize(mag, None, 0, 255, cv.NORM_MINMAX)
-    #     bgr = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
-    #     return bgr
     
     
     
 
 if __name__ == '__main__':
-    cap = cv.VideoCapture(cv.samples.findFile("./walk.mp4"))
-
     of = OpticalFlow()
-    ret, frame1 = cap.read()
-    
-    while True:
-        ret, frame2 = cap.read()
-        flow = of.calculate_flow(frame1, frame2)
-        print(of.get_bbox_from_flow(flow))
-        # flow_map = of.map_flow(flow)
-        # cv.imshow('frame2', flow_map)
-        # k = cv.waitKey(30) & 0xff
-        frame1 = frame2
-    
+    video_in = cv.VideoCapture("./walk.mp4")
+    print(video_in.get(cv.CAP_PROP_FPS))
+    ret, prev_frame = video_in.read()
+    colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for j in range(10)]
+    for i in range(30):
+        ret, current_frame = video_in.read()
+        f1 = of.convert_frame_to_gray(prev_frame.copy())
+        f2 = of.convert_frame_to_gray(current_frame.copy())
+        flow = of.calculate_flow(f1, f2)
+        prev_frame = current_frame.copy()
+        
+        for track in of.get_bbox_from_flow(flow):
+            x1, y1, x2, y2 = track
+            print(x1, y1, x2, y2)
+            cv.rectangle(current_frame, (int(x1), int(y1)), (int(x1 + x2), int(y1 + y2)), (colors[12 % len(colors)]), 3)
+
+        cv.imshow("current_frame", current_frame)
+        k = cv.waitKey(30) & 0xff
     
