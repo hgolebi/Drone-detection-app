@@ -10,16 +10,16 @@ from pathlib import Path
 
 from Trackers import encoder_dir
 
+
 class DeepSortTracker(Tracker):
     """ Utilize DeepSort library with it's box encoder to track objects. """
-    def __init__(self, metric=None, encoder_filename=f'{encoder_dir}\mars-small128.pb'):
+
+    def __init__(self, metric=None, encoder_filename=f'{encoder_dir}/mars-small128.pb'):
         if metric is None:
             metric = nn_matching.NearestNeighborDistanceMetric("cosine", 2)
-        self.deep_sort = DeepSort(metric)
-        
-        
-        self.encoder = gdet.create_box_encoder(encoder_filename, batch_size=16)
-        
+        self.deep_sort = DeepSort(metric, 2, n_init=2)
+
+        self.encoder = gdet.create_box_encoder(encoder_filename, batch_size=1)
 
     def update(self, bboxes, scores, frame):
         """ Update tracker using bboxes with standard xywh format (not YOLO xywh format!)"""
@@ -27,7 +27,8 @@ class DeepSortTracker(Tracker):
 
         detections_scores_features = []
         for bbox_id, bbox in enumerate(bboxes):
-            detections_scores_features.append(Detection(bbox, scores[bbox_id], features[bbox_id]))
+            detections_scores_features.append(
+                Detection(bbox, scores[bbox_id], features[bbox_id]))
 
         self.deep_sort.predict()
         self.deep_sort.update(detections_scores_features)
@@ -38,7 +39,7 @@ class DeepSortTracker(Tracker):
         """ Create Track objects from confirmed tracks  """
         tracks = []
         for track in self.deep_sort.tracks:
-            if not track.is_confirmed() or track.time_since_update > 1:
+            if not track.is_confirmed() or track.time_since_update > 2:
                 continue
             bbox = track.to_tlbr()
             id = track.track_id
@@ -47,20 +48,22 @@ class DeepSortTracker(Tracker):
 
         self.tracks = tracks
 
+
 class SortTracker(Tracker):
     """ Utilize Sort library to track objects """
+
     def __init__(self):
-        self.sort = Sort(max_age=1, min_hits=3, iou_threshold=0.6)
+        self.sort = Sort(max_age=2, min_hits=2, iou_threshold=3)
         self.tracks = []
-    
+
     def update(self, bboxes, scores, frame=None):
         """ Convert bboxes and scores to right format and upadte tracks """
         bboxes = self.xywh_to_xyxy(np.array(bboxes).reshape(-1, 4))
         scores = np.array(scores).reshape(-1, 1)
         detections = np.c_[bboxes, scores]
-        
+
         tracked = self.sort.update(detections)
-        
+
         self.tracks.clear()
         for *bbox, box_id in tracked:
             box_id = int(box_id)
