@@ -10,31 +10,50 @@ import os
 app = Flask(__name__)
 CORS(app, origins="*")
 
-minio_client = Minio("localhost:9000", access_key="tracking_system",
+minio_client = Minio("172.20.0.3:9000", access_key="tracking_system",
                      secret_key="password", secure=False)
 
 
 @app.route("/<name>")
 def hello_word(name):
+
     if not "user_id" in request.args:
         abort(400)
 
+    if not 'threshold' in request.args:
+        abort(400)
+
+    if not 'tracker' in request.args:
+        abort(400)
+
+    # print('dupa')
+    # print(os.getcwd())
+    # print('dupa')
+
     user_id = request.args['user_id']
+    threshold = float(request.args['threshold'])
+    tracker = (request.args['tracker'])
     found = minio_client.bucket_exists(f"user{user_id}")
     if not found:
         abort(400)
 
     minio_client.fget_object(
         f"user{user_id}", f"video/{name}", f"Detection/tmp/{name}")
+    try:
+        ot = object_tracking.ObjectTracking(name=tracker, threshold=threshold)
+    except ValueError:
+        abort(400)
 
-    ot = object_tracking.ObjectTracking()
-    ot.get_video(f"Detection/tmp/{name}", f"Detection/tmp/out.mp4")
+    ot.get_video(f"Detection/tmp/{name}", f"Detection/tmp/out.mp4", )
     ot.run()
 
-    minio_client.fput_object(
-        f"user{user_id}", f"tracked/{name}", f"Detection/tmp/out.mp4", content_type='video/mp4')
+    new_name = name[:name.rfind('.')]
+    new_name = f'{name}-{int(threshold*10000)}-{tracker}.mp4'
 
-    os.remove("./Detecton/tmp/out.mp4")
-    os.remove(f"./Detecton/tmp/{name}")
+    minio_client.fput_object(
+        f"user{user_id}", f"tracked/{new_name}", f"Detection/tmp/out.mp4", content_type='video/mp4')
+
+    os.remove(f"Detection/tmp/out.mp4")
+    os.remove(f"Detection/tmp/{name}")
     return """<!doctype html>
         OK"""
