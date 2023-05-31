@@ -1,0 +1,17 @@
+.vscode
+*.pyc
+backend/uploads/*
+backend/thumbnails/*
+backend/uploads/.gitkeep
+backend/thumbnails/.gitkeep
+__pycache__
+Detection/bad_test
+Detection/not_test.py
+Frontend/src/app/
+ignore.py
+out.mp4
+s.mp4
+todos.txt
+v/
+walk_longer.mp4
+node_modules/

@@ -1,32 +1,43 @@
 import os
 from flask import Flask, flash, request, redirect, url_for, send_from_directory, render_template
-from flask import abort, jsonify
+from flask import abort, jsonify, send_file, after_this_request
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-import thumbnails
-from Detection import object_tracking
+from backend import thumbnails
+from MinioClient import MinioClient
+from FileRemover import FileRemover
+
+
+# from Detection import object_tracking
 import time
 
 absolute_path = os.path.dirname(os.path.realpath(__file__))
 
-UPLOAD_FOLDER = os.path.join(absolute_path, './uploads')
-TRACKED_FOLDER = os.path.join(absolute_path, './tracked')
-
+UPLOAD_FOLDER = os.path.join(absolute_path, './tmp')
 ALLOWED_EXTENSIONS = {'mp4', 'mov'}
 
 
+minio_client = MinioClient("172.20.0.3:9000")
+minio_client.set_client('03')
+
+
+file_remover = FileRemover()
+
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['TRACKED_FOLDER'] = TRACKED_FOLDER
-CORS(app)
+CORS(app, origins="*")
 
 
 @app.route("/")
 def hello_word():
     title = "GRUPA ŚLEDCZA"
-    videos = os.listdir(os.path.join(absolute_path, "./uploads/"))
-    videos = [v for v in videos if v.endswith(tuple(ALLOWED_EXTENSIONS))]
-    return render_template('index.html', title=title, videos=videos)
+    videos = [i for i in minio_client.list_names()]
+    # videos = [v for v in videos if v.endswith(tuple(ALLOWED_EXTENSIONS))]
+
+    return render_template(os.path.join(absolute_path, "templates", '/index.html'), title=title, videos=videos)
+# """<p>hello world</p>
+#     <a href=./upload/> Dodaj wideo </a>
+#     """
 
 
 def allowed_file(filename):
@@ -56,38 +67,62 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            thumbnails.generate_thumbnail(filename)
+            minio_client.put_video(filename)
+            # thumbnails.generate_thumbnail(filename)
             return redirect(url_for('hello_word'))
 
 
-@app.route('/videos/<name>')
+@app.route('/video/')
+def show_videos():
+    videos = [i for i in minio_client.list_names()]
+    return jsonify(videos)
+
+
+@app.route('/video/<name>')
 def show_file(name):
     as_attachment = 'attachment' in request.args
-    return send_from_directory(app.config["UPLOAD_FOLDER"], name, as_attachment=as_attachment)
+    fp = minio_client.get_video(name)
+    resp = send_file(fp, download_name=name, as_attachment=as_attachment)
+    file_remover.cleanup_once_done(resp, fp)
+    return resp
+
+    # @app.after_this_response
+    # def delete(response):
+    #     os.remove(f"./tmp/{name}")
+    #     return response
+
+    # return send_from_directory("./tmp/", name, as_attachment=as_attachment)
 
 
 @app.route('/thumbnails/<name>')
 def show_thumb(name):
-    if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
-        abort(404)
-    thumb_name = thumbnails.thumbnail_name(name)
-    thumbnails.check_thumbnail(name)
-    return send_from_directory('./thumbnails', thumb_name)
+    # if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
+    #     abort(404)
+    # thumb_name = thumbnails.thumbnail_name(name)
+    # thumbnails.check_thumbnail(name)
+    # return send_from_directory('./thumbnails', thumb_name)
+    fp = minio_client.get_thumbnail(name)
+    resp = send_file(fp, download_name=thumbnails.thumbnail_name(name))
+    file_remover.cleanup_once_done(resp, fp)
+    return resp
 
 
 @app.route('/processed_videos/<name>')
 def run_yolo(name):
-    if_att = 'attachment' in request.args
-    out_name = f"out_{name}"
-    if not out_name in os.listdir(app.config['TRACKED_FOLDER']):
-        if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
-            abort(404)
-        ot = object_tracking.ObjectTracking()
-        ot.get_video(os.path.join(app.config["UPLOAD_FOLDER"], name),
-                    os.path.join(absolute_path, "tracked", out_name))
-        ot.run()
-    return send_from_directory(app.config["TRACKED_FOLDER"], out_name, as_attachment=if_att)
+    as_attachment = 'attachment' in request.args
+    fp = minio_client.get_tracked(name)
+    resp = send_file(fp, download_name=name, as_attachment=as_attachment)
+    file_remover.cleanup_once_done(resp, fp)
+    return resp
+#     if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
+#         abort(404)
+#     out_name = f"out_{name}"
+#     ot = object_tracking.ObjectTracking()
+#     ot.get_video(os.path.join(app.config["UPLOAD_FOLDER"], name),
+#                  os.path.join(absolute_path, "tracked", out_name))
+#     ot.run()
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+# @app.route('/download/<name>')
+# def download_file(name):
+#     return send_from_directory(app.config["UPLOAD_FOLDER"], name)
