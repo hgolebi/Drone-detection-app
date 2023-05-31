@@ -63,6 +63,8 @@ class ObjectTracking:
             self.adnotations.append([self.frame_counter, track.track_id, x1, y1, x2, y2])
             cv2.rectangle(self.frame, (int(x1), int(y1)), (int(x2), int(y2)),
                           (self.colors[track.track_id % len(self.colors)]), 3)
+            cv2.putText(self.frame, 'Drone', (int(x1), int(y1)), cv2.FONT_HERSHEY_SIMPLEX, 0.7, 
+                        (self.colors[track.track_id % len(self.colors)]), 2)
             self.object_counter = track.track_id
 
         self.cap_out.write(self.frame)
