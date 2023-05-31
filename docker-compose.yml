@@ -6,6 +6,9 @@ services:
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: tracking_system
+    networks:
+      network:
+        ipv4_address: 172.20.0.4
     volumes:
       - ./database/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
 
@@ -17,6 +20,18 @@ services:
     networks:
       network:
         ipv4_address: 172.20.0.2
+    depends_on:
+      - db
+      - minio
+
+  detection:
+    restart: always
+    build: Detection
+    ports:
+      - "5001:5000"
+    networks:
+      network:
+        ipv4_address: 172.20.0.5
     depends_on:
       - db
       - minio
