@@ -55,7 +55,7 @@ class SortTracker(Tracker):
         self.tracks = []
 
     def update(self, bboxes, scores, frame=None):
-        """ Convert bboxes and scores to right format and upadte tracks """
+        """ Convert bboxes and scores to right format and update tracks """
         bboxes = self.xywh_to_xyxy(np.array(bboxes).reshape(-1, 4))
         scores = np.array(scores).reshape(-1, 1)
         detections = np.c_[bboxes, scores]
@@ -66,4 +66,3 @@ class SortTracker(Tracker):
         for *bbox, box_id in tracked:
             box_id = int(box_id)
             self.tracks.append(Track(box_id, bbox))
-        return self.tracks

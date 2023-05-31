@@ -16,7 +16,7 @@ class Tracker(ABC):
                 scores (list[list]): A 2D list of scores.
                 frame (numpy.ndarray): An image frame.
 
-            After callign update(), tracker contains updated attribute tracks.
+            After calling update(), tracker contains updated attribute tracks.
         """
         pass
 
@@ -28,7 +28,7 @@ class Tracker(ABC):
         """ Convert bboxes from xyxy to xywh format """
         return np.hstack((bboxes[:, 0:2], bboxes[:, 2:4] - bboxes[:, 0:2]))
 
-    def bbox_over_threshold(self, bbox, bboxes, threshold=0, get_idx=False):
+    def bbox_over_IOU_threshold(self, bbox, bboxes, threshold=0, get_idx=False):
         """ 
             Check IOU score for bbox comparing with each bbox in bboxes.
             If get_idx is set to True, return id of first matching bbox in passed list. 
@@ -70,6 +70,11 @@ class Track:
 
     def __repr__(self):
         return f"<Track ID: {self.track_id}, Bounding Box: {self.bbox}>"
+    
+    def __eq__(self, other):
+        bbox_equal = all([x == y for x, y in zip(self.bbox, other.bbox)])
+        return self.track_id == other.track_id and bbox_equal
 
     def get_xywh(self):
         return (self.bbox[0], self.bbox[1], self.bbox[2] - self.bbox[0], self.bbox[3] - self.bbox[1])
+

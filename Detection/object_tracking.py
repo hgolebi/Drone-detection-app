@@ -46,8 +46,11 @@ class ObjectTracking:
         self.video_in = cv2.VideoCapture(video_path_in)
         self.next_frame()
 
-        self.cap_out = cv2.VideoWriter(video_path_out, cv2.VideoWriter_fourcc(
-            *'mp4v'), self.video_in.get(cv2.CAP_PROP_FPS), (self.frame.shape[1], self.frame.shape[0]))
+        self.cap_out = cv2.VideoWriter(video_path_out,
+                                       cv2.VideoWriter_fourcc(*'mp4v'),
+                                       self.video_in.get(cv2.CAP_PROP_FPS),
+                                       (self.frame.shape[1], self.frame.shape[0])
+                                       )
         self.fps = self.video_in.get(cv2.CAP_PROP_FPS)
 
         self.colors = [(random.randint(0, 255), random.randint(
@@ -89,6 +92,18 @@ class ObjectTracking:
     def update_tracker(self, bboxes, scores, frame):
         self.tracker.update(bboxes, scores, frame)
 
+    def next_frame(self):
+        """ Load next frame """
+        self.frame_returned, self.frame = self.video_in.read()
+        self.frame_counter += 1
+
+    def save_adnotations(self):
+        """ Save adnotations in proper format """
+        self.text_file = StringIO()
+        for item in self.adnotations:
+            self.text_file.write(', '.join(str(round(num, 2)) for num in item) + '\n')
+        self.text_file.seek(0)
+
     def run(self):
         """ Start Object Tracking
 
@@ -106,24 +121,12 @@ class ObjectTracking:
 
         return self.text_file
 
-    def next_frame(self):
-        """ Load next frame """
-        self.frame_returned, self.frame = self.video_in.read()
-        self.frame_counter += 1
-
-    def save_adnotations(self):
-        """ Save adnotations in proper format """
-        self.text_file = StringIO()
-        for item in self.adnotations:
-            self.text_file.write(', '.join(str(round(num, 2)) for num in item) + '\n')
-        self.text_file.seek(0)
-
 
 if __name__ == "__main__":
-    ot = ObjectTracking(name='csrt')
+    ot = ObjectTracking(name='csrt', threshold=0.45)
     if len(sys.argv) > 1:
         ot.get_video(sys.argv[1])
     else:
-        ot.get_video('./walk.mp4')
+        ot.get_video('./drone.mp4')
 
     print(ot.run().read())
