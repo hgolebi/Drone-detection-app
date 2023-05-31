@@ -1,101 +1,127 @@
-import numpy as np
-import cv2 as cv
-from random import random
 from tracker import Tracker, Track
+import numpy as np
+import cv2
+from random import random
+
 
 class OpticalFlow(Tracker):
+    """ Uses cv2.calcOpticalFlowFarneback to implement OpticalFlow tracking of YOLO-detected objects """
+
     def __init__(self):
         self.last_frame = None
         self.curr_frame = None
+        self.id = -1
         self.tracks = []
-        self.id = 0
         self.last_trackers = np.array([])
-    
+
     def get_id(self):
-        self.id += 1 
+        """ Auto increments id while accessing """
+        self.id += 1
         return self.id
 
     def update(self, bboxes, scores, frame):
+        """ Updates bboxed by comparison with last-detected bboxes and YOLO detected bboxes"""
         if self.last_frame is not None:
             self.curr_frame = self.convert_frame_to_gray(frame.copy())
-            # TODO refactor flow call
-            flow = self.calculate_flow(self.last_frame, self.curr_frame)
+
+            # get new bboxes
+            flow = self.calculate_flow()
             new_bboxes = self.get_bbox_from_flow(flow)
-            # print(new_bboxes)
-            self.compare_boxes(new_bboxes, bboxes)
+            self.compare_bboxes(new_bboxes, bboxes)
+
             print(self.tracks)
             self.last_frame = self.curr_frame.copy()
         else:
-            self.last_frame = self.convert_frame_to_gray(frame)
-    
+            self.last_frame = self.convert_frame_to_gray(frame.copy())  # first frame
+
     def get_bbox_from_flow(self, flow_map):
-        """ return xywh bbox from flow """
-        magnitude, _ = cv.cartToPolar(flow_map[..., 0], flow_map[..., 1])
+        """ Return xywh bbox from flow based on magnitude """
+        magnitude, _ = cv2.cartToPolar(flow_map[..., 0], flow_map[..., 1])
         filtered_magnitude = magnitude > 2
-        contours, _ = cv.findContours(filtered_magnitude.astype(np.uint8), cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-        bounding_boxes = np.array([cv.boundingRect(contour) for contour in contours])
+
+        contours, _ = cv2.findContours(filtered_magnitude.astype(
+            np.uint8), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        bounding_boxes = np.array([cv2.boundingRect(contour) for contour in contours])
+
+        # filtering smaller movements
         if bounding_boxes.ndim == 2:
-            bounding_boxes = bounding_boxes[np.all(bounding_boxes>6, axis=1)]
+            bounding_boxes = bounding_boxes[np.all(bounding_boxes > 6, axis=1)]
 
         return np.array(bounding_boxes)
-    
-    def compare_boxes(self, bounding_boxes, yolo_bboxes=None):
-        """ bounding_boxes xywh, yolo_bboxes xywh, Track in xyxy """
-        if self.tracks == [] and yolo_bboxes is not None and yolo_bboxes != []:
-            self.tracks = [Track(self.get_id(), box) for box in self.xywh_to_xyxy(np.array(yolo_bboxes))]
-        elif self.tracks != [] and bounding_boxes.ndim == 2:
+
+    def compare_bboxes(self, bboxes_found, yolo_bboxes=None):
+        """ 
+            Compares bounding boxes found by tracker and YOLO with existing ones.
+            First bbox can be initialized only by YOLO detector.
+            When tracks are not empty, bboxes found are compared using IoU.
+            Only first found match is added to tracks.
+            All other matches found need to be really close to YOLO detection to be passed further
+        """
+        if self.tracks == [] and yolo_bboxes not in [None, []]:
+            self.tracks = [Track(self.get_id(), box)
+                           for box in self.xywh_to_xyxy(np.array(yolo_bboxes))]
+        elif self.tracks != [] and bboxes_found.ndim == 2:
+            current_xywh_bboxes = [track.get_xywh() for track in self.tracks]
             new_tracks = []
-            curr_bboxes = [track.get_xywh() for track in self.tracks]
             ids_found = set()
-            
-            for bbox, track_bbox in zip(bounding_boxes, self.xywh_to_xyxy(bounding_boxes)):
-                bbox_found = self.box_over_threshold(bbox, curr_bboxes, threshold=.4, get_idx=True)
-                
-                if bbox_found is not None and self.tracks[bbox_found].track_id not in ids_found:
-                    new_tracks.append(Track(self.tracks[bbox_found].track_id, track_bbox))
-                    ids_found.add(self.tracks[bbox_found].track_id)
-                elif yolo_bboxes is not None and len(yolo_bboxes) != 0 and self.box_over_threshold(bbox, yolo_bboxes, threshold=0.7):
+
+            for bbox, track_bbox in zip(bboxes_found, self.xywh_to_xyxy(bboxes_found)):
+                bbox_found_idx = self.bbox_over_threshold(
+                    bbox, current_xywh_bboxes, threshold=.4, get_idx=True)
+
+                if bbox_found_idx is not None and self.tracks[bbox_found_idx].track_id not in ids_found:
+                    # Update Track with new bbox
+                    new_tracks.append(Track(self.tracks[bbox_found_idx].track_id, track_bbox))
+                    ids_found.add(self.tracks[bbox_found_idx].track_id)
+                elif yolo_bboxes not in [None, []] and self.bbox_over_threshold(bbox, yolo_bboxes, threshold=0.7):
+                    # Create new Track
                     new_tracks.append(Track(self.get_id(), track_bbox))
-            
-            for track in self.tracks:
-                if track.track_id not in ids_found:
-                    track.last_updated += 1
-                    if track.last_updated < 5:
-                        new_tracks.append(track)
-            
+
+            new_tracks.extend(self.check_and_increment_lifetime(ids_found))
             self.tracks = sorted(new_tracks, key=lambda t: t.track_id)
-    
+
+    def check_and_increment_lifetime(self, ids_found):
+        """ 
+            Increment track lifetime if it was not found.
+            Returns trackers that are still viable.
+        """
+        tracks_not_found = []
+        for track in self.tracks:
+            if track.track_id not in ids_found:
+                track.last_updated += 1
+                if track.last_updated < 5:
+                    tracks_not_found.append(track)
+        return tracks_not_found
+
     def convert_frame_to_gray(self, frame):
-        """converts frame from RGB to GRAY color"""
-        return cv.cvtColor(frame, cv.COLOR_BGR2GRAY)
-    
-    def calculate_flow(self, frame_prev, frame_next):
-        """calculates optical flow based on two RGB frames"""
+        """ Converts frame from RGB to GRAY color """
+        return cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        return cv.calcOpticalFlowFarneback(frame_prev, frame_next, None, 0.5, 3, 15, 3, 5, 1.2, 0)
+    def calculate_flow(self):
+        """ Calculates optical flow based on two GRAY frames """
+        return cv2.calcOpticalFlowFarneback(self.last_frame, self.curr_frame, None, 0.5, 3, 15, 3, 5, 1.2, 0)
 
-    
-    
-    
 
 if __name__ == '__main__':
+    # Main function for visual examination purposes only
     of = OpticalFlow()
-    video_in = cv.VideoCapture("./walk.mp4")
-    print(video_in.get(cv.CAP_PROP_FPS))
+    video_in = cv2.VideoCapture("./walk.mp4")
+    print(video_in.get(cv2.CAP_PROP_FPS))
     ret, prev_frame = video_in.read()
-    colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)) for j in range(10)]
+    colors = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+              for j in range(10)]
     for i in range(30):
         ret, current_frame = video_in.read()
         f1 = of.convert_frame_to_gray(prev_frame.copy())
         f2 = of.convert_frame_to_gray(current_frame.copy())
         flow = of.calculate_flow(f1, f2)
         prev_frame = current_frame.copy()
-        
+
         for track in of.get_bbox_from_flow(flow):
             x1, y1, x2, y2 = track
             print(x1, y1, x2, y2)
-            cv.rectangle(current_frame, (int(x1), int(y1)), (int(x1 + x2), int(y1 + y2)), (colors[12 % len(colors)]), 3)
+            cv2.rectangle(current_frame, (int(x1), int(y1)), (int(x1 + x2),
+                          int(y1 + y2)), (colors[12 % len(colors)]), 3)
 
-        cv.imshow("current_frame", current_frame)
-        k = cv.waitKey(30) & 0xff
-    
+        cv2.imshow("current_frame", current_frame)
+        k = cv2.waitKey(30) & 0xff

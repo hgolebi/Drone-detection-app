@@ -29,10 +29,10 @@ class TestTrackerMethods(unittest.TestCase):
         bboxes = [[12, 12, 10, 10], [0, 0, 8, 8], [1, 1, 4, 3]]
         threshold = 0.3
 
-        result1 = self.tracker.box_over_threshold(bbox, bboxes, threshold)
+        result1 = self.tracker.bbox_over_threshold(bbox, bboxes, threshold)
         self.assertTrue(result1)
 
-        result2 = self.tracker.box_over_threshold(bbox, bboxes, threshold, get_idx=True)
+        result2 = self.tracker.bbox_over_threshold(bbox, bboxes, threshold, get_idx=True)
         self.assertEqual(result2, 1)
     
     def test_no_box_over_threshold(self):
@@ -40,10 +40,10 @@ class TestTrackerMethods(unittest.TestCase):
         bboxes = [[12, 12, 10, 10], [1, 1, 4, 3]]
         threshold = 0.3
 
-        result1 = self.tracker.box_over_threshold(bbox, bboxes, threshold)
+        result1 = self.tracker.bbox_over_threshold(bbox, bboxes, threshold)
         self.assertFalse(result1)
 
-        result2 = self.tracker.box_over_threshold(bbox, bboxes, threshold, get_idx=True)
+        result2 = self.tracker.bbox_over_threshold(bbox, bboxes, threshold, get_idx=True)
         self.assertEqual(result2, None)
         
 

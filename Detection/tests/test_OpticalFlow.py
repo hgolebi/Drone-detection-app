@@ -29,24 +29,24 @@ class OpticalFlowTestCase(unittest.TestCase):
 
     def test_compare_boxes_no_existing_tracks(self):
         bounding_boxes = np.array(np.array([(10, 10, 20, 20), (30, 30, 40, 40)]))
-        self.optical_flow.compare_boxes(bounding_boxes, bounding_boxes)
+        self.optical_flow.compare_bboxes(bounding_boxes, bounding_boxes)
         self.assertEqual(len(self.optical_flow.tracks), 2)
 
     def test_compare_boxes_with_existing_tracks(self):
         self.optical_flow.tracks = [Track(1, (10, 10, 20, 20))]
         bounding_boxes = np.array(np.array([(10, 10, 20, 20), (30, 30, 40, 40)]))
-        self.optical_flow.compare_boxes(bounding_boxes, bounding_boxes)
+        self.optical_flow.compare_bboxes(bounding_boxes, bounding_boxes)
         # self.assertEqual(len(self.optical_flow.tracks), 2)
     
     def test_track_changes(self):
         bounding_boxes = np.array([(10, 10, 20, 20), (30, 30, 40, 40)])
-        self.optical_flow.compare_boxes(bounding_boxes, bounding_boxes)
+        self.optical_flow.compare_bboxes(bounding_boxes, bounding_boxes)
         self.assertEqual(len(self.optical_flow.tracks), 2) 
         self.assertEqual(self.optical_flow.tracks[0].track_id, 1)
         self.assertEqual(self.optical_flow.tracks[1].track_id, 2)
         
         bounding_boxes2 = np.array([(10, 10, 20, 20), (31, 31, 40, 40), (31, 31, 39, 39), (31, 31, 40, 40)])
-        self.optical_flow.compare_boxes(bounding_boxes2)
+        self.optical_flow.compare_bboxes(bounding_boxes2)
         self.assertEqual(self.optical_flow.tracks[0].track_id, 1)
         self.assertTrue(all(self.optical_flow.tracks[0].bbox == (10, 10, 20, 20)))
         

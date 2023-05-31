@@ -1,18 +1,17 @@
 from deep_sort.deep_sort.tracker import Tracker as DeepSort
+from sort.sort import Sort
+
 from deep_sort.tools import generate_detections as gdet
 from deep_sort.deep_sort import nn_matching
 from deep_sort.deep_sort.detection import Detection
 
-from sort.sort import Sort
 from tracker import Tracker, Track
-import numpy as np
-from pathlib import Path
-
 from Trackers import encoder_dir
+import numpy as np
 
 
 class DeepSortTracker(Tracker):
-    """ Utilize DeepSort library with it's box encoder to track objects. """
+    """ Utilize DeepSort library with it's box encoder and metric to track objects. """
 
     def __init__(self, metric=None, encoder_filename=f'{encoder_dir}/mars-small128.pb'):
         if metric is None:
@@ -20,20 +19,19 @@ class DeepSortTracker(Tracker):
         self.deep_sort = DeepSort(metric, 2, n_init=2)
 
         self.encoder = gdet.create_box_encoder(encoder_filename, batch_size=1)
+        self.tracks = []
 
     def update(self, bboxes, scores, frame):
-        """ Update tracker using bboxes with standard xywh format (not YOLO xywh format!)"""
+        """ Update tracker using bboxes with standard xywh format (NOT YOLO xywh format)"""
         features = self.encoder(frame, bboxes)
 
         detections_scores_features = []
         for bbox_id, bbox in enumerate(bboxes):
-            detections_scores_features.append(
-                Detection(bbox, scores[bbox_id], features[bbox_id]))
+            detections_scores_features.append(Detection(bbox, scores[bbox_id], features[bbox_id]))
 
         self.deep_sort.predict()
         self.deep_sort.update(detections_scores_features)
         self.update_tracks()
-        return self.tracks
 
     def update_tracks(self):
         """ Create Track objects from confirmed tracks  """
