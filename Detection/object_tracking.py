@@ -61,8 +61,7 @@ class ObjectTracking:
         """ Write detections as colored boxes based on track_id """
         for track in self.tracker.tracks:
             x1, y1, x2, y2 = track.bbox
-            self.adnotations.append(
-                [self.frame_counter, track.track_id, x1, y1, x2, y2])
+            self.adnotations.append([self.frame_counter, track.track_id, x1, y1, x2, y2])
             cv2.rectangle(self.frame, (int(x1), int(y1)), (int(x2), int(y2)),
                           (self.colors[track.track_id % len(self.colors)]), 3)
             cv2.putText(self.frame, 'Drone', (int(x1), int(y1)-8), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
@@ -123,6 +122,7 @@ class ObjectTracking:
 
         self.save_adnotations()
         self.video_in.release()
+        self.cap_out.release()
 
         return self.text_file
 
