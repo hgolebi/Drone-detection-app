@@ -63,7 +63,6 @@ class AnnotationsRewriterTests(unittest.TestCase):
 
         new_anns = self.rewriter.change_to_yolo_format(line, width, height)
 
-        # Sprawdzenie, czy koordynaty zostały poprawnie przekształcone
         self.assertEqual(new_anns, ["0 0.26953125 0.8384259259259259 0.4109375 0.8324074074074074"])
 
     def test_convert_drone_coordinates(self):
