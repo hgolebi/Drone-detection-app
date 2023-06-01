@@ -7,7 +7,7 @@ CREATE TABLE movies
 (movie_id SERIAL PRIMARY KEY,
 name VARCHAR(100),
 date_added  DATE DEFAULT CURRENT_DATE,
-extenxion VARCHAR(10) NOT NULL,
+extension VARCHAR(10) NOT NULL,
 url VARCHAR(250),
 user_id INT,
 CONSTRAINT fk_user
@@ -18,7 +18,7 @@ CREATE TABLE movies_with_detection
 (movie_id SERIAL PRIMARY KEY,
 name VARCHAR(100),
 date_added  DATE DEFAULT CURRENT_DATE,
-extenxion VARCHAR(10) NOT NULL,
+extension VARCHAR(10) NOT NULL,
 url VARCHAR(250),
 annotations VARCHAR(10000),
 source_movie_id INT,

@@ -1,13 +1,22 @@
-import os
-from flask import Flask, flash, request, redirect, url_for, send_from_directory, render_template
-from flask import abort, jsonify, send_file, after_this_request
+from flask import (
+    Flask, flash, request, redirect, url_for, send_from_directory, render_template,
+    abort, jsonify, send_file, after_this_request
+)
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from backend import thumbnails
 from MinioClient import MinioClient
 from FileRemover import FileRemover
 import http.client as client
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import (
+    login_required, login_user, logout_user, current_user, LoginManager
+)
+from flask_bcrypt import Bcrypt
+from models import db, User, Movie, MovieWithDetection
 import time
+import os
+
 
 absolute_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -20,10 +29,66 @@ minio_client.set_client('03')
 
 
 file_remover = FileRemover()
-
 app = Flask(__name__)
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://tracking_system:password@172.20.0.4:5432/tracking_system'
+app.config['SECRET_KEY'] = os.environ.get(
+    'FLASK_SECRET_KEY', 'fallback_secret_key')
 CORS(app, origins="*")
+
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
+
+
+@app.post('/register')
+def register_user():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if not username or not password:
+        return jsonify({'message': 'Missing user registration data'}), 400
+    user = User.query.filter_by(username=username).first()
+    if user:
+        return jsonify({'message': 'Username is already taken'}), 400
+
+    hash_pswd = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(username=username, password=hash_pswd)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': 'User created'}), 201
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
+
+
+@app.post('/login')
+def login_authenticate():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if not username or not password:
+        return jsonify({'message': 'Missing user login data'}), 400
+
+    user = User.query.filter_by(username=username).first()
+    if user and bcrypt.check_password_hash(user.password, password):
+        login_user(user)
+        return jsonify({'message': f'Hello {current_user.username}'}), 200
+    elif not bcrypt.check_password_hash(user.password, password):
+        return jsonify({'message': f'Invalid password'}), 404
+    else:
+        return jsonify({'message': f'User "{username}" is not in database'}), 404
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return jsonify({'message': 'Logging out.'}), 200
 
 
 def name_norm2track(name, threshold, tracker):
@@ -46,6 +111,7 @@ def allowed_file(filename):
 
 
 @app.route('/videos', methods=['GET', 'POST'])
+@login_required
 def upload_file():
     if request.method == 'GET':
         video_list = [i for i in minio_client.list_names()]
@@ -71,12 +137,14 @@ def upload_file():
 
 
 # @app.route('/video/')
+# @login_required
 # def show_videos():
 #     videos = [i for i in minio_client.list_names()]
 #     return jsonify(videos)
 
 
 @app.route('/videos/<name>')
+@login_required
 def show_file(name):
     as_attachment = 'attachment' in request.args
     fp = minio_client.get_video(name)
@@ -86,6 +154,7 @@ def show_file(name):
 
 
 @app.route('/thumbnails/<name>')
+@login_required
 def show_thumb(name):
     fp = minio_client.get_thumbnail(name)
     resp = send_file(fp, download_name=thumbnails.thumbnail_name(name))
@@ -94,6 +163,7 @@ def show_thumb(name):
 
 
 @app.route('/tracked_videos/<name>')
+@login_required
 def get_tracked(name):
     if ('threshold' in request.args) ^ ('tracker' in request.args):
         abort(400)
@@ -111,6 +181,7 @@ def get_tracked(name):
 
 
 @app.route('/processed_videos/<name>')
+@login_required
 def tracking(name):
 
     if not 'threshold' in request.args:
