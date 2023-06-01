@@ -49,7 +49,8 @@ class ObjectTracking:
         self.cap_out = cv2.VideoWriter(video_path_out,
                                        cv2.VideoWriter_fourcc(*'mp4v'),
                                        self.video_in.get(cv2.CAP_PROP_FPS),
-                                       (self.frame.shape[1], self.frame.shape[0])
+                                       (self.frame.shape[1],
+                                        self.frame.shape[0])
                                        )
         self.fps = self.video_in.get(cv2.CAP_PROP_FPS)
 
@@ -60,10 +61,11 @@ class ObjectTracking:
         """ Write detections as colored boxes based on track_id """
         for track in self.tracker.tracks:
             x1, y1, x2, y2 = track.bbox
-            self.adnotations.append([self.frame_counter, track.track_id, x1, y1, x2, y2])
+            self.adnotations.append(
+                [self.frame_counter, track.track_id, x1, y1, x2, y2])
             cv2.rectangle(self.frame, (int(x1), int(y1)), (int(x2), int(y2)),
                           (self.colors[track.track_id % len(self.colors)]), 3)
-            cv2.putText(self.frame, 'Drone', (int(x1), int(y1)-8), cv2.FONT_HERSHEY_SIMPLEX, 0.7, 
+            cv2.putText(self.frame, 'Drone', (int(x1), int(y1)-8), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
                         (self.colors[track.track_id % len(self.colors)]), 2)
             self.object_counter = track.track_id
 
@@ -103,7 +105,8 @@ class ObjectTracking:
         """ Save adnotations in proper format """
         self.text_file = StringIO()
         for item in self.adnotations:
-            self.text_file.write(', '.join(str(round(num, 2)) for num in item) + '\n')
+            self.text_file.write(', '.join(str(round(num, 2))
+                                 for num in item) + '\n')
         self.text_file.seek(0)
 
     def run(self):
