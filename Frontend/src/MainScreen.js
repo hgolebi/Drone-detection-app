@@ -1,8 +1,8 @@
 import './MainScreen.css'
 import React from 'react'
 
-const API_URL = 'http://localhost:5000/'
-function pass(){;}
+const API_URL = 'http://172.20.0.2:5000/'
+function pass() { ; }
 
 class MainScreen extends React.Component {
 
@@ -21,12 +21,12 @@ class MainScreen extends React.Component {
         return;
     }
 
-    getVideos()  {
-        fetch(API_URL+'videos').then(response => response.json())
-        .then(json => {
-            this.setState({videos: json});
-            this.changeVideo(json[0])
-        })
+    getVideos() {
+        fetch(API_URL + 'videos').then(response => response.json())
+            .then(json => {
+                this.setState({ videos: json });
+                this.changeVideo(json[0])
+            })
     }
 
     changeVideo(name) {
@@ -40,13 +40,13 @@ class MainScreen extends React.Component {
     sendVideo(video) {
         const videoData = new FormData();
         videoData.append('file', video, video.name);
-        fetch(API_URL+'videos', {
-          method: 'POST',
-          body: videoData
+        fetch(API_URL + 'videos', {
+            method: 'POST',
+            body: videoData
         })
-          .then(response => console.log(response))
-          .then(() => this.getVideos())
-          .catch(error => console.error(error))
+            .then(response => console.log(response))
+            .then(() => this.getVideos())
+            .catch(error => console.error(error))
     }
 
     addVideoEventHandler = (event) => {
@@ -81,7 +81,7 @@ class MainScreen extends React.Component {
         return;
     }
 
-    render(){
+    render() {
         const thumbnail_list = this.state.videos.map((name, index) => (
             <div className='tn_card' key={index} name={name} onClick={() => this.changeVideo(name)}>
                 <img className='tn' src={API_URL+'thumbnails/'+name} key={index}></img>
@@ -141,7 +141,7 @@ class MainScreen extends React.Component {
             <div id="main_screen">
                 <div id="video_container">
                     <video id='video' controls
-                        src={API_URL+this.state.vid_group+this.state.vid_name} type='video/mp4'>
+                        src={API_URL + this.state.vid_group + this.state.vid_name} type='video/mp4'>
                     </video>
                 </div>
                 <div id="buttons_container">

@@ -1,32 +1,104 @@
-import os
-from flask import Flask, flash, request, redirect, url_for, send_from_directory, render_template
-from flask import abort, jsonify
+from flask import (
+    Flask, flash, request, redirect, url_for, send_from_directory, render_template,
+    abort, jsonify, send_file, after_this_request
+)
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
-import thumbnails
-from Detection import object_tracking
+from backend import thumbnails
+from MinioClient import MinioClient
+from FileRemover import FileRemover
+import http.client as client
+from flask_sqlalchemy import SQLAlchemy
+from flask_login import (
+    login_required, login_user, logout_user, current_user, LoginManager
+)
+from flask_bcrypt import Bcrypt
+from models import db, User, Movie, MovieWithDetection
 import time
+import os
+
 
 absolute_path = os.path.dirname(os.path.realpath(__file__))
 
-UPLOAD_FOLDER = os.path.join(absolute_path, './uploads')
-TRACKED_FOLDER = os.path.join(absolute_path, './tracked')
-
+UPLOAD_FOLDER = os.path.join(absolute_path, './tmp')
 ALLOWED_EXTENSIONS = {'mp4', 'mov'}
 
 
+minio_client = MinioClient("172.20.0.3:9000")
+minio_client.set_client('03')
+
+
+file_remover = FileRemover()
 app = Flask(__name__)
+
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['TRACKED_FOLDER'] = TRACKED_FOLDER
-CORS(app)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://tracking_system:password@172.20.0.4:5432/tracking_system'
+app.config['SECRET_KEY'] = os.environ.get('FLASK_SECRET_KEY', 'fallback_secret_key')
+CORS(app, origins="*")
+
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+    
+bcrypt = Bcrypt(app)
+login_manager = LoginManager(app)
+
+
+@app.post('/register')
+def register_user():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if not username or not password:
+        return jsonify({'message': 'Missing user registration data'}), 400
+    user = User.query.filter_by(username=username).first()
+    if user:
+        return jsonify({'message': 'Username is already taken'}), 400
+    
+    hash_pswd = bcrypt.generate_password_hash(password).decode('utf-8')
+    new_user = User(username=username, password=hash_pswd)
+    db.session.add(new_user)
+    db.session.commit()
+    return jsonify({'message': 'User created'}), 201
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(user_id)
+
+@app.post('/login')
+def login_authenticate():
+    username = request.form.get('username')
+    password = request.form.get('password')
+    if not username or not password:
+        return jsonify({'message': 'Missing user login data'}), 400
+    
+    user = User.query.filter_by(username=username).first()
+    if user and bcrypt.check_password_hash(user.password, password):
+        login_user(user)
+        return jsonify({'message': f'Hello {current_user.username}'}), 200  
+    elif not bcrypt.check_password_hash(user.password, password):
+        return jsonify({'message': f'Invalid password'}), 404
+    else:
+        return jsonify({'message': f'User "{username}" is not in database'}), 404 
+    
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return jsonify({'message': 'Logging out.'}), 200
+
+
+def name_norm2track(name, threshold, tracker):
+    new_name = name[:name.rfind('.')]
+    new_name = f'{name}-{int(threshold*10000)}-{tracker}.mp4'
+    return new_name
 
 
 @app.route("/")
 def hello_word():
     title = "GRUPA ŚLEDCZA"
-    videos = os.listdir(os.path.join(absolute_path, "./uploads/"))
-    videos = [v for v in videos if v.endswith(tuple(ALLOWED_EXTENSIONS))]
-    return render_template('index.html', title=title, videos=videos)
+    videos = [i for i in minio_client.list_names()]
+
+    return render_template(os.path.join(absolute_path, "templates", '/index.html'), title=title, videos=videos)
 
 
 def allowed_file(filename):
@@ -35,6 +107,7 @@ def allowed_file(filename):
 
 
 @app.route('/videos', methods=['GET', 'POST'])
+@login_required
 def upload_file():
     if request.method == 'GET':
         video_list = os.listdir(app.config["UPLOAD_FOLDER"])
@@ -56,38 +129,77 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            thumbnails.generate_thumbnail(filename)
+            minio_client.put_video(filename)
+            # thumbnails.generate_thumbnail(filename)
             return redirect(url_for('hello_word'))
 
 
-@app.route('/videos/<name>')
+@app.route('/video/')
+@login_required
+def show_videos():
+    videos = [i for i in minio_client.list_names()]
+    return jsonify(videos)
+
+
+@app.route('/video/<name>')
+@login_required
 def show_file(name):
     as_attachment = 'attachment' in request.args
-    return send_from_directory(app.config["UPLOAD_FOLDER"], name, as_attachment=as_attachment)
+    fp = minio_client.get_video(name)
+    resp = send_file(fp, download_name=name, as_attachment=as_attachment)
+    file_remover.cleanup_once_done(resp, fp)
+    return resp
 
 
 @app.route('/thumbnails/<name>')
+@login_required
 def show_thumb(name):
-    if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
-        abort(404)
-    thumb_name = thumbnails.thumbnail_name(name)
-    thumbnails.check_thumbnail(name)
-    return send_from_directory('./thumbnails', thumb_name)
+    fp = minio_client.get_thumbnail(name)
+    resp = send_file(fp, download_name=thumbnails.thumbnail_name(name))
+    file_remover.cleanup_once_done(resp, fp)
+    return resp
 
 
-@app.route('/processed_videos/<name>')
-def run_yolo(name):
-    if_att = 'attachment' in request.args
-    out_name = f"out_{name}"
-    if not out_name in os.listdir(app.config['TRACKED_FOLDER']):
-        if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
-            abort(404)
-        ot = object_tracking.ObjectTracking()
-        ot.get_video(os.path.join(app.config["UPLOAD_FOLDER"], name),
-                    os.path.join(absolute_path, "tracked", out_name))
-        ot.run()
-    return send_from_directory(app.config["TRACKED_FOLDER"], out_name, as_attachment=if_att)
+@app.route('/tracked/<name>')
+@login_required
+def get_tracked(name):
+    if ('threshold' in request.args) ^ ('tracker' in request.args):
+        abort(400)
+
+    if ('threshold' in request.args) and ('tracker' in request.args):
+        threshold = float(request.args['threshold'])
+        tracker = (request.args['tracker'])
+        name = name_norm2track(name, threshold, tracker)
+
+    as_attachment = 'attachment' in request.args
+    fp = minio_client.get_tracked(name)
+    resp = send_file(fp, download_name=name, as_attachment=as_attachment)
+    file_remover.cleanup_once_done(resp, fp)
+    return resp
 
 
-if __name__ == '__main__':
-    app.run(debug=True)
+@app.route('/tracking/<name>')
+@login_required
+def tracking(name):
+
+    if not 'threshold' in request.args:
+        abort(400)
+
+    if not 'tracker' in request.args:
+        abort(400)
+
+    threshold = float(request.args['threshold'])
+    tracker = (request.args['tracker'])
+
+    conn = client.HTTPConnection('172.20.0.5', 5000)
+    conn.request(
+        "GET", f"/{name}?user_id={minio_client.get_clent()[-2:]}&threshold={threshold}&tracker={tracker}")
+    response = conn.getresponse()
+
+    if (response.status != 200):
+        abort(response.status)
+
+    fp = minio_client.get_tracked(name_norm2track(name, threshold, tracker))
+    resp = send_file(fp, download_name=name)
+    file_remover.cleanup_once_done(resp, fp)
+    return resp

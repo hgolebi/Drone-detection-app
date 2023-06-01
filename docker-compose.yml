@@ -1,0 +1,91 @@
+services:
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_USER: tracking_system
+      POSTGRES_DB: tracking_system
+    networks:
+      network:
+        ipv4_address: 172.20.0.4
+    # volumes:
+      # - ./database/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      # - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
+
+  front:
+    restart: always
+    build: Frontend
+    ports:
+      - "3000:3000"
+    networks:
+      network:
+        ipv4_address: 172.20.0.6
+    depends_on:
+      - back
+
+  back:
+    restart: always
+    build: backend
+    ports:
+      - "5000:5000"
+    networks:
+      network:
+        ipv4_address: 172.20.0.2
+    environment:
+      FLASK_SECRET_KEY: 'sdfhui12vb3u2bg1uy'
+    depends_on:
+      - db
+      - minio
+
+  detection:
+    restart: always
+    build: Detection
+    ports:
+      - "5001:5000"
+    networks:
+      network:
+        ipv4_address: 172.20.0.5
+    depends_on:
+      - db
+      - minio
+
+  minio:
+    image: minio/minio
+    restart: always
+    ports:
+      - "9000:9000"
+      - "9090:9090"
+    volumes:
+      - minio_storage:/data
+    environment:
+      MINIO_ROOT_USER: tracking_system
+      MINIO_ROOT_PASSWORD: password
+    command: server --console-address ":9090" /data
+    networks:
+      network:
+        ipv4_address: 172.20.0.3
+
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 8080:8080
+    depends_on:
+      - db
+
+volumes:
+  minio_storage:
+
+
+networks:
+  network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16

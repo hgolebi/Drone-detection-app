@@ -1,0 +1,9 @@
+numpy
+flask
+flask_cors
+minio
+opencv-python
+flask_sqlalchemy
+flask_login
+flask_bcrypt
+psycopg2

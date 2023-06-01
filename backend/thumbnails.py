@@ -1,39 +1,33 @@
 import os
 import subprocess
 import cv2
-
-absolute_path = os.path.dirname(os.path.realpath(__file__))
-UPLOAD_FOLDER = os.path.join(absolute_path, './uploads/')
-THUMBNAIL_FOLDER = os.path.join(absolute_path, './thumbnails/')
+import tempfile
+import numpy as np
 
 
 def thumbnail_name(videoname: str):
-    return "_".join(videoname.split('.'))+".png"
+    return "-".join(videoname.split('.'))+".png"
 
 
-def generate_thumbnail(videoname: str, size=500):
-    thumb_name = thumbnail_name(videoname)
-    # cmd = ['ffmpeg', '-y', '-i', f'{UPLOAD_FOLDER}/{videoname}', '-vf', f'thumbnail=n={n}',
-    #        '-frames:v', '1', f'{THUMBNAIL_FOLDER}/{thumb_name}', '-loglevel', 'quiet']
-    # subprocess.run(cmd, shell=False)
-    video = cv2.VideoCapture(UPLOAD_FOLDER + videoname)
-    success, image = video.read()
-    if not success:
-        return False
-    width = image.shape[1]
-    height = image.shape[0]
-    scale_percent = max(height / size, width / size)
-    dim = (int(width / scale_percent), int(height / scale_percent))
-    thumbnail = cv2.resize(image, dim)
+def generate_thumbnail(filename, n=30):
 
-    cv2.imwrite(THUMBNAIL_FOLDER + thumb_name, thumbnail)
-    video.release()
-
-
-def check_thumbnail(videname: str):
-    thumb_name = thumbnail_name(videname)
-    if not thumb_name in os.listdir(THUMBNAIL_FOLDER):
-        generate_thumbnail(videname, 100)
+    cap = cv2.VideoCapture(f"./backend/tmp/{filename}")
+    video_length = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))-1
+    print(video_length)
+    # image = np.zeros((720,1280,3), dtype=np.uint8)
+    if cap.isOpened() and video_length > 0:
+        succes, image = cap.read()
+        i = 0
+        new_image = image
+        while succes and i < n:
+            image = new_image
+            succes, new_image = cap.read()
+            i += 1
+        cv2.imwrite(f"./backend/tmp/{thumbnail_name(filename)}", image)
+        return
+    cv2.imwrite(f"./backend/tmp/{thumbnail_name(filename)}",
+                np.zeros((720, 1280, 3), dtype=np.uint8))
 
 
-# check_thumbnail("film.mp4")
+def check_thumbnail(self, videname: str):
+    thumb_name = self.thumbnail_name(videname)
