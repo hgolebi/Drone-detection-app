@@ -8,10 +8,10 @@ RUN apt-get install -y python3-opencv
 
 
 WORKDIR /app
-# COPY ./req.txt ./backend/req.txt
-COPY . ./backend
+ADD ./req.txt ./backend/req.txt
 RUN python3 -m pip install --upgrade pip
 RUN python3 -m pip install -r backend/req.txt
+ADD . ./backend
 
 
 #COPY ../Detection Detection

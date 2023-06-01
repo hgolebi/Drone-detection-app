@@ -6,11 +6,17 @@ services:
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_USER: tracking_system
+      POSTGRES_DB: tracking_system
     networks:
       network:
         ipv4_address: 172.20.0.4
-    volumes:
-      - ./database/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+    # volumes:
+      # - ./database/init.sql:/docker-entrypoint-initdb.d/create_tables.sql
+      # - db-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
 
   front:
     restart: always
@@ -31,6 +37,8 @@ services:
     networks:
       network:
         ipv4_address: 172.20.0.2
+    environment:
+      FLASK_SECRET_KEY: 'sdfhui12vb3u2bg1uy'
     depends_on:
       - db
       - minio
