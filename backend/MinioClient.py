@@ -22,6 +22,9 @@ class MinioClient:
             self._client.make_bucket(f"user{user_id}")
         self._bucket = f"user{user_id}"
 
+    def get_clent(self):
+        return self._bucket
+
     def put_thumbnail(self, videoname):
         if self._bucket is None:
             raise SyntaxError('User not select')
@@ -74,7 +77,7 @@ class MinioClient:
         #     self._bucket, filename, f"./backend/tmp/{filename}")
         try:
             response = self._client.get_object(
-                self._bucket, f"video/{filename}")
+                self._bucket, f"{filename}")
             tmp.write(response.data)
 
     # Read data from response.
@@ -88,7 +91,7 @@ class MinioClient:
         return self._get_video(f"video/{filename}")
 
     def get_tracked(self, filename):
-        return self._get_video(f"tracking/{filename}")
+        return self._get_video(f"tracked/{filename}")
     #     if self._bucket is None:
     #         raise SyntaxError('User not select')
     #     tmp = tempfile.NamedTemporaryFile()
