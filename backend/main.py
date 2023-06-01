@@ -7,8 +7,6 @@ from backend import thumbnails
 from MinioClient import MinioClient
 from FileRemover import FileRemover
 import http.client as client
-
-# from Detection import object_tracking
 import time
 
 absolute_path = os.path.dirname(os.path.realpath(__file__))
@@ -38,12 +36,8 @@ def name_norm2track(name, threshold, tracker):
 def hello_word():
     title = "GRUPA ŚLEDCZA"
     videos = [i for i in minio_client.list_names()]
-    # videos = [v for v in videos if v.endswith(tuple(ALLOWED_EXTENSIONS))]
 
     return render_template(os.path.join(absolute_path, "templates", '/index.html'), title=title, videos=videos)
-# """<p>hello world</p>
-#     <a href=./upload/> Dodaj wideo </a>
-#     """
 
 
 def allowed_file(filename):
@@ -92,21 +86,9 @@ def show_file(name):
     file_remover.cleanup_once_done(resp, fp)
     return resp
 
-    # @app.after_this_response
-    # def delete(response):
-    #     os.remove(f"./tmp/{name}")
-    #     return response
-
-    # return send_from_directory("./tmp/", name, as_attachment=as_attachment)
-
 
 @app.route('/thumbnails/<name>')
 def show_thumb(name):
-    # if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
-    #     abort(404)
-    # thumb_name = thumbnails.thumbnail_name(name)
-    # thumbnails.check_thumbnail(name)
-    # return send_from_directory('./thumbnails', thumb_name)
     fp = minio_client.get_thumbnail(name)
     resp = send_file(fp, download_name=thumbnails.thumbnail_name(name))
     file_remover.cleanup_once_done(resp, fp)
@@ -154,17 +136,3 @@ def tracking(name):
     resp = send_file(fp, download_name=name)
     file_remover.cleanup_once_done(resp, fp)
     return resp
-
-
-#     if not name in os.listdir(app.config["UPLOAD_FOLDER"]):
-#         abort(404)
-#     out_name = f"out_{name}"
-#     ot = object_tracking.ObjectTracking()
-#     ot.get_video(os.path.join(app.config["UPLOAD_FOLDER"], name),
-#                  os.path.join(absolute_path, "tracked", out_name))
-#     ot.run()
-
-
-# @app.route('/download/<name>')
-# def download_file(name):
-#     return send_from_directory(app.config["UPLOAD_FOLDER"], name)
