@@ -3,6 +3,8 @@ from minio.error import S3Error
 import tempfile
 import os
 import cv2
+import numpy as np
+import thumbnails
 
 # minio_client = Minio(
 #     'localhost:9000', access_key="tracking_system", secret_key="password", secure=False)
@@ -20,14 +22,54 @@ class MinioClient:
             self._client.make_bucket(f"user{user_id}")
         self._bucket = f"user{user_id}"
 
-    def put_video(self, filename,  data):
+    def get_clent(self):
+        return self._bucket
+
+    def put_thumbnail(self, videoname):
         if self._bucket is None:
             raise SyntaxError('User not select')
 
-        self._client.put_object(self._bucket, f"video/{filename}",
-                                data=data, length=-1, part_size=10*1024*1024)
+        thumbnails.generate_thumbnail(videoname)
+        thumbname = thumbnails.thumbnail_name(videoname)
 
-    def get_video(self, filename):
+        self._client.fput_object(
+            self._bucket, f"thumbnail/{thumbname}", f"./backend/tmp/{thumbname}")
+
+        os.remove(f"./backend/tmp/{thumbname}")
+
+    def get_thumbnail(self, videname):
+        if self._bucket is None:
+            raise SyntaxError('User not select')
+
+        tmp = tempfile.NamedTemporaryFile()
+        filename = thumbnails.thumbnail_name(videname)
+        # self._client.get_object(
+        #     self._bucket, filename, f"./backend/tmp/{filename}")
+        try:
+            response = self._client.get_object(
+                self._bucket, f"thumbnail/{filename}")
+            tmp.write(response.data)
+        finally:
+            response.close()
+            response.release_conn()
+        tmp.seek(0)
+        return tmp
+
+    def put_video(self, filename):
+        if self._bucket is None:
+            raise SyntaxError('User not select')
+
+        # fp = tempfile.NamedTemporaryFile()
+        # fp.write(data)
+        # fp.seek(0)
+        self.put_thumbnail(filename)
+
+        self._client.fput_object(
+            self._bucket, f"video/{filename}", f"./backend/tmp/{filename}")
+
+        os.remove(f"./backend/tmp/{filename}")
+
+    def _get_video(self, filename):
         if self._bucket is None:
             raise SyntaxError('User not select')
         tmp = tempfile.NamedTemporaryFile()
@@ -35,7 +77,7 @@ class MinioClient:
         #     self._bucket, filename, f"./backend/tmp/{filename}")
         try:
             response = self._client.get_object(
-                self._bucket, f"video/{filename}")
+                self._bucket, f"{filename}")
             tmp.write(response.data)
 
     # Read data from response.
@@ -45,12 +87,34 @@ class MinioClient:
         tmp.seek(0)
         return tmp
 
-    def put_thumbnail(self, filename,  data):
-        if self._bucket is None:
-            raise SyntaxError('User not select')
+    def get_video(self, filename):
+        return self._get_video(f"video/{filename}")
 
-        self._client.put_object(self._bucket, f"video/{filename}",
-                                data=data, length=-1, part_size=10*1024*1024)
+    def get_tracked(self, filename):
+        return self._get_video(f"tracked/{filename}")
+    #     if self._bucket is None:
+    #         raise SyntaxError('User not select')
+    #     tmp = tempfile.NamedTemporaryFile()
+    #     # self._client.get_object(
+    #     #     self._bucket, filename, f"./backend/tmp/{filename}")
+    #     try:
+    #         response = self._client.get_object(
+    #             self._bucket, f"video/{filename}")
+    #         tmp.write(response.data)
+
+    # # Read data from response.
+    #     finally:
+    #         response.close()
+    #         response.release_conn()
+    #     tmp.seek(0)
+    #     return tmp
+
+    # def put_thumbnail(self, filename,  data):
+    #     if self._bucket is None:
+    #         raise SyntaxError('User not select')
+
+    #     self._client.put_object(self._bucket, f"video/{filename}",
+    #                             data=data, length=-1, part_size=10*1024*1024)
 
     def list_object(self):
         if self._bucket is None:
@@ -80,9 +144,13 @@ if __name__ == "__main__":
     client.set_client('03')
     print([i for i in client.list_names()])
     # tempdir=tempfile.TemporaryDirectory()
-    a = client.get_video('film.mp4')
+    a = client.get_video('Pensjonat_Bekas.mp4')
     print(a.name)
-    cap = cv2.VideoCapture(a.name)
+    image = thumbnails.generate_thumbnail(a)
+
+    # print(image.shape)
+    cv2.imwrite(
+        f"./backend/tmp/{thumbnails.thumbnail_name('Pensjonat_Bekas.mp4')}", image)
     a.close()
 
     # client.put_object('film.mp4', './backend/uploads/GOPR5842_005.mp4')

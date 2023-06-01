@@ -65,7 +65,6 @@ class ObjectTracking:
                           (self.colors[track.track_id % len(self.colors)]), 3)
             cv2.putText(self.frame, 'Drone', (int(x1), int(y1)-8), cv2.FONT_HERSHEY_SIMPLEX, 0.7, 
                         (self.colors[track.track_id % len(self.colors)]), 2)
-            self.object_counter = track.track_id
 
         self.cap_out.write(self.frame)
 
@@ -120,6 +119,7 @@ class ObjectTracking:
 
         self.save_adnotations()
         self.video_in.release()
+        self.cap_out.release()
 
         return self.text_file
 
