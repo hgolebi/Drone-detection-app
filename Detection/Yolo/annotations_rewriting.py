@@ -90,6 +90,8 @@ class AnnotationsRewriter:
         to yolo format and saves to a seperate txt file """
 
         for filename, dimension in zip(os.listdir(input_dir_with_annotations), dimensions):
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
             print(filename, " running...")
             file_path = os.path.join(input_dir_with_annotations, filename)
             width, height = dimension

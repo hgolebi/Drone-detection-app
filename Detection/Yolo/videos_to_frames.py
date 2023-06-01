@@ -20,7 +20,10 @@ class VideoProcessor:
         """ Extracts frames from videos and saves them as jpgs """
 
         for filename, num_frames in zip(os.listdir(input_dir_with_videos), lines_count):
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
             video_path = os.path.join(input_dir_with_videos, filename)
+            print(filename, " extracting...")
 
             cap = cv2.VideoCapture(video_path)
             if not cap.isOpened():
@@ -34,8 +37,9 @@ class VideoProcessor:
                     frame_index = i * frame_interval
                     frame = self.extract_frame(cap, frame_index)
                     if frame is not None:
-                        output_path = os.path.join(output_dir, f"{filename[:-4]}_frame_{i:05d}.jpg")
+                        output_path = output_dir + "/" + f"{filename[:-4]}_frame_{i:05d}.jpg"
                         cv2.imwrite(output_path, frame)
+                        print(output_path)
 
             cap.release()
 
