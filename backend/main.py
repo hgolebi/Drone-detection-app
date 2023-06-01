@@ -48,9 +48,7 @@ def allowed_file(filename):
 @app.route('/videos', methods=['GET', 'POST'])
 def upload_file():
     if request.method == 'GET':
-        video_list = os.listdir(app.config["UPLOAD_FOLDER"])
-        video_list = [v for v in video_list if v.endswith(
-            tuple(ALLOWED_EXTENSIONS))]
+        video_list = [i for i in minio_client.list_names()]
         return jsonify(video_list)
 
     if request.method == 'POST':
@@ -72,13 +70,13 @@ def upload_file():
             return redirect(url_for('hello_word'))
 
 
-@app.route('/video/')
-def show_videos():
-    videos = [i for i in minio_client.list_names()]
-    return jsonify(videos)
+# @app.route('/video/')
+# def show_videos():
+#     videos = [i for i in minio_client.list_names()]
+#     return jsonify(videos)
 
 
-@app.route('/video/<name>')
+@app.route('/videos/<name>')
 def show_file(name):
     as_attachment = 'attachment' in request.args
     fp = minio_client.get_video(name)
@@ -95,7 +93,7 @@ def show_thumb(name):
     return resp
 
 
-@app.route('/tracked/<name>')
+@app.route('/tracked_videos/<name>')
 def get_tracked(name):
     if ('threshold' in request.args) ^ ('tracker' in request.args):
         abort(400)
@@ -112,7 +110,7 @@ def get_tracked(name):
     return resp
 
 
-@app.route('/tracking/<name>')
+@app.route('/processed_videos/<name>')
 def tracking(name):
 
     if not 'threshold' in request.args:
