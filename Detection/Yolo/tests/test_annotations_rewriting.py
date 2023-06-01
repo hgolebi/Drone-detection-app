@@ -9,9 +9,6 @@ class AnnotationsRewriterTests(unittest.TestCase):
     def setUp(self):
         self.rewriter = AnnotationsRewriter()
 
-    def tearDown(self):
-        pass
-
     def test_load_dimensions_from_file(self):
         with open("temp_dimensions.txt", 'w') as file:
             file.write("1920.0, 1080.0\n")
@@ -36,7 +33,6 @@ class AnnotationsRewriterTests(unittest.TestCase):
 
         temp_val = self.rewriter.dimensions
         self.rewriter.calculate_dimensions("temp_videos")
-        print(self.rewriter.dimensions)
 
         self.assertEqual(self.rewriter.dimensions, [(1920.0, 1080.0), (1920.0, 1080.0)])
 
@@ -76,8 +72,10 @@ class AnnotationsRewriterTests(unittest.TestCase):
 
     def test_write_each_ann_to_single_file(self):
         os.makedirs("temp_annotations")
-        open("temp_annotations/annotation1.txt", "w").write("1 0 123 456 789 600\n")
-        open("temp_annotations/annotation2.txt", "w").write("2 1 234 567 890 748\n")
+        with open("temp_annotations/annotation1.txt", "w") as f:
+            f.write("1 0 123 456 789 600\n")
+        with open("temp_annotations/annotation2.txt", "w") as f:
+            f.write("2 1 234 567 890 748\n")
 
         dimensions = [(1920, 1080), (1280, 720)]
 
