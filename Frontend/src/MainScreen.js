@@ -10,8 +10,11 @@ class MainScreen extends React.Component {
         this.state = {
             videos: [],
             vid_group: 'videos/',
-            vid_name: null,
-            is_gen_vid_displayed: false
+            vid_name: undefined,
+            generated_vid: undefined,
+            is_gen_vid_displayed: false,
+            method: undefined,
+            precision: 40
         }
     }
 
@@ -61,15 +64,15 @@ class MainScreen extends React.Component {
     }
 
     train = () => {
-        fetch(API_URL + 'processed_videos/'+ this.state.vid_name, {
+        fetch(API_URL + 'tracked/'+ this.state.vid_name, {
             credentials: 'include',
         })
-        .then(() => this.setState({vid_group: 'processed_videos/'}));
+        .then(() => this.setState({vid_group: 'tracked/'}));
     }
 
     showGeneratedVideo() {
         this.setState({
-            vid_group: 'processed_videos/',
+            vid_group: 'tracked/',
             is_gen_vid_displayed: true,
         });
         // this.setState({is_gen_vid_displayed: true});
@@ -86,43 +89,95 @@ class MainScreen extends React.Component {
         return;
     }
 
+    handleSliderChange = (event) => {
+        this.setState({precision: event.target.value});
+    }
+
+    handleMethodChange = (event) => {
+        this.setState({method: event.target.value});
+    }
+
+    getGeneratedVideo() {
+
+    }
+
+    generateVideo() {
+        const vid_name = this.state.vid_name
+        const method = this.state.method
+        const precision = this.state.precision / 100
+        const form = {
+            tracker: method,
+            treshold: precision,
+        }
+        fetch(API_URL + 'tracking/' + vid_name, {
+            method: 'POST',
+            headers: {
+                'Content-type': 'application/json'
+            },
+            credentials: 'include',
+            body: JSON.stringify(form),
+        })
+        .then(response => {
+            if (response.ok) {
+                this.setState({
+                    generated_vid: 'tracked/' + vid_name + '?treshold=' + precision + '&tracker=' + method,
+                })
+            }
+        })
+    }
+
     render() {
         const thumbnail_list = this.state.videos.map((name, index) => (
             <div className='tn_card' key={index} name={name} onClick={() => this.changeVideo(name)}>
-                <img className='tn' src={API_URL+'thumbnails/'+name} key={index}></img>
-                <img key={index} className='delete' onClick={() => this.deleteVideo(name)} src='delete.png'></img>
+                <img className='tn' src={API_URL+'thumbnails/'+name} key={'tn' + index}></img>
+                <img key={'del' + index} className='delete' onClick={() => this.deleteVideo(name)} src='delete.png'></img>
             </div>
         ))
         const main_vid_controls =
         <div className='main_vid_controls'>
             <div className='generate_btns'>
-                <b>CHOOSE METHOD</b>
+                <b className='btn_label'>CHOOSE METHOD</b>
                 <div className='method_btns'>
                     <label className='radio'>
-                        <input type='radio' value='type1' name='method'></input>
-                        <span>type1</span>
+                        <input type='radio' value='deepsort' name='method' onChange={this.handleMethodChange}></input>
+                        <span>deepsort</span>
 
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='type2' name='method'></input>
-                        <span>type2</span>
+                        <input type='radio' value='sort' name='method' onChange={this.handleMethodChange}></input>
+                        <span>sort</span>
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='type3' name='method'></input>
-                        <span>opencv</span>
+                        <input type='radio' value='medianflow' name='method' onChange={this.handleMethodChange}></input>
+                        <span>medianflow</span>
+                    </label>
+                </div>
+                <div className='method_btns'>
+                    <label className='radio'>
+                        <input type='radio' value='kcf' name='method' onChange={this.handleMethodChange}></input>
+                        <span>kcf</span>
+
+                    </label>
+                    <label className='radio'>
+                        <input type='radio' value='csrt' name='method' onChange={this.handleMethodChange}></input>
+                        <span>csrt</span>
+                    </label>
+                    <label className='radio'>
+                        <input type='radio' value='opticalflow' name='method' onChange={this.handleMethodChange}></input>
+                        <span>opticalflow</span>
                     </label>
                 </div>
                 <b>CHOOSE PRECISION</b>
                 <div className="slidecontainer">
-                    <input type="range" min="1" max="100" defaultValue="50" class="slider" id="myRange"></input>
+                    <input type="range" min="0" max="100" value={this.state.precision} class="slider" id="myRange" onChange={this.handleSliderChange}></input>
                 </div>
-                <button className='btn generate'>Generate</button>
+                <button className='btn generate' onClick={() => this.generateVideo()}>Generate</button>
             </div>
             <div className='gen_vid_panel'>
                 <b>GENERATED VIDEO</b>
                 <div className='gen_vid_card' onClick={() => this.showGeneratedVideo()}>
                     <img src='play.png' className='icon play'></img>
-                    <video className='gen_vid' src={API_URL + 'processed_videos/' + this.state.vid_name} type='video/mp4'></video>
+                    <video className='gen_vid' src={API_URL + this.state.generated_vid} type='video/mp4'></video>
                 </div>
             </div>
         </div>
