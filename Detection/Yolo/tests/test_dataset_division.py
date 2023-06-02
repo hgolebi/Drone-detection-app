@@ -27,6 +27,8 @@ class DatasetDividerTests(unittest.TestCase):
         shutil.rmtree(self.src_dir_images)
         shutil.rmtree(self.dst_dir_labels, ignore_errors=True)
         shutil.rmtree(self.dst_dir_images, ignore_errors=True)
+        os.rmdir("src/")
+        os.rmdir("dst/")
     
     def test_divide_dataset_into_train_and_val_sets(self):
         labels_files = ["label1.txt", "label2.txt", "label3.txt", "label4.txt"]
