@@ -5,6 +5,7 @@ from flask import abort, jsonify, send_file, after_this_request
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 from Detection import object_tracking
+import subprocess
 import os
 
 app = Flask(__name__)
@@ -46,6 +47,9 @@ def hello_word(name):
 
     ot.get_video(f"Detection/tmp/{name}", f"Detection/tmp/out.mp4", )
     ot.run()
+
+    command = f"ffmpeg -y -i Detection/tmp/out.mp4 -c:v libx264 -preset medium -crf 23 -c:a copy Detection/tmp/out.mp4"
+    subprocess.call(command, shell=True)    
 
     new_name = name[:name.rfind('.')]
     new_name = f'{name}-{int(threshold*10000)}-{tracker}.mp4'
