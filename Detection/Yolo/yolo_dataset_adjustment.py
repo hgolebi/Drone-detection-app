@@ -15,8 +15,8 @@ class DatasetPreprocessor:
         self.division_percentage = division_percentage
 
     def run(self):
-        dimensions = self._process_annotations()
-        self._process_videos(dimensions)
+        self._process_annotations()
+        self._process_videos()
         self._divide_dataset()
 
     def _process_annotations(self):
@@ -24,7 +24,6 @@ class DatasetPreprocessor:
         dimensions = ann_rewriter.get_dimensions_videos(self.input_dir_with_videos)
         ann_rewriter.write_each_ann_to_single_file(self.input_dir_with_annotations, dimensions,
                                                    self.output_dir_for_labels)
-        return dimensions
 
     def _process_videos(self):
         vid_processor = VideoProcessor()
