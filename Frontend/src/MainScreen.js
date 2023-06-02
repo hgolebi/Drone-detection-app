@@ -1,8 +1,7 @@
 import './MainScreen.css'
 import React from 'react'
 
-const API_URL = 'http://172.20.0.2:5000/'
-function pass() { ; }
+var API_URL = 'http://192.168.1.27:5000/'
 
 class MainScreen extends React.Component {
 
@@ -22,11 +21,14 @@ class MainScreen extends React.Component {
     }
 
     getVideos() {
-        fetch(API_URL + 'videos').then(response => response.json())
-            .then(json => {
-                this.setState({ videos: json });
-                this.changeVideo(json[0])
-            })
+        fetch(API_URL + 'videos', {
+            credentials: 'include',
+        })
+        .then(response => response.json())
+        .then(json => {
+            this.setState({ videos: json });
+            this.changeVideo(json[0])
+        })
     }
 
     changeVideo(name) {
@@ -42,23 +44,26 @@ class MainScreen extends React.Component {
         videoData.append('file', video, video.name);
         fetch(API_URL + 'videos', {
             method: 'POST',
-            body: videoData
+            body: videoData,
+            credentials: 'include',
         })
-            .then(response => console.log(response))
-            .then(() => this.getVideos())
-            .catch(error => console.error(error))
+        .then(response => console.log(response))
+        .then(() => this.getVideos())
+        .catch(error => console.error(error))
     }
 
     addVideoEventHandler = (event) => {
         const file = event.target.files[0];
-        if (file == undefined) {
+        if (file === undefined) {
             return;
         }
         this.sendVideo(file);
     }
 
     train = () => {
-        fetch(API_URL + 'processed_videos/'+ this.state.vid_name)
+        fetch(API_URL + 'processed_videos/'+ this.state.vid_name, {
+            credentials: 'include',
+        })
         .then(() => this.setState({vid_group: 'processed_videos/'}));
     }
 
