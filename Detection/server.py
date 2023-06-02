@@ -48,16 +48,17 @@ def hello_word(name):
     ot.get_video(f"Detection/tmp/{name}", f"Detection/tmp/out.mp4", )
     ot.run()
 
-    command = f"ffmpeg -y -i Detection/tmp/out.mp4 -c:v libx264 -preset medium -crf 23 -c:a copy Detection/tmp/out.mp4"
+    command = f"ffmpeg -y -i Detection/tmp/out.mp4 -c:v libx264 -preset medium -crf 23 -c:a copy Detection/tmp/out_avc1.mp4"
     subprocess.call(command, shell=True)    
 
     new_name = name[:name.rfind('.')]
     new_name = f'{name}-{int(threshold*10000)}-{tracker}.mp4'
 
     minio_client.fput_object(
-        f"user{user_id}", f"tracked/{new_name}", f"Detection/tmp/out.mp4", content_type='video/mp4')
+        f"user{user_id}", f"tracked/{new_name}", f"Detection/tmp/out_avc1.mp4", content_type='video/mp4')
 
     os.remove(f"Detection/tmp/out.mp4")
+    os.remove(f"Detection/tmp/out_avc1.mp4")
     os.remove(f"Detection/tmp/{name}")
     return """<!doctype html>
         OK"""

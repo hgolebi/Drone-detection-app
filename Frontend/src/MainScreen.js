@@ -196,14 +196,14 @@ class MainScreen extends React.Component {
             <div className='button_card'>
                 <b className='button_label'>DOWNLOAD ADDNOTATIONS</b>
                 <img src='download_file.png' className='icon down_addn'></img>
+            </div>
         </div>
-
-    </div>
+        const video_url = API_URL + this.state.vid_group + this.state.vid_name
         return (
             <div id="main_screen">
                 <div id="video_container">
                     <video id='video' controls
-                        src={API_URL + this.state.vid_group + this.state.vid_name} type='video/mp4'>
+                        src={this.state.is_gen_vid_displayed ? API_URL + this.state.generated_vid : video_url} type='video/mp4'>
                     </video>
                 </div>
                 <div id="buttons_container">
