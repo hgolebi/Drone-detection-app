@@ -9,6 +9,7 @@ from MinioClient import MinioClient
 from FileRemover import FileRemover
 import http.client as client
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import and_
 from flask_login import (
     login_required, login_user, logout_user, current_user, LoginManager
 )
@@ -25,7 +26,7 @@ ALLOWED_EXTENSIONS = {'mp4', 'mov'}
 
 
 minio_client = MinioClient("172.20.0.3:9000")
-minio_client.set_client('03')
+# minio_client.set_client('03')
 
 
 file_remover = FileRemover()
@@ -114,11 +115,16 @@ def allowed_file(filename):
 @login_required
 def upload_file():
     if request.method == 'GET':
+        # stmt = db.select(Movie.name).where(
+        #     Movie.user_id == current_user.get_id())
+        return jsonify([f'{i.name}' for i in Movie.query.all()])
+        minio_client.set_client(current_user.get_id())
         video_list = [i for i in minio_client.list_names()]
         return jsonify(video_list)
 
     if request.method == 'POST':
         # check if the post request has the file part
+        minio_client.set_client(current_user.get_id())
         if 'file' not in request.files:
             flash('No file part')
             return redirect(request.url)
@@ -130,10 +136,23 @@ def upload_file():
             return redirect(request.url)
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
+
+            if Movie.query.filter_by(name=filename).first() is not None:
+                return jsonify({'message': f'A file with the name {filename} already exists'}), 400
+
             file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
             minio_client.put_video(filename)
+
+            extension = filename.rsplit('.', 1)[-1].lower()
+            movie = Movie(name=filename, extension=extension,
+                          user_id=current_user.get_id())
+            db.session.add(movie)
+            db.session.commit()
+
             # thumbnails.generate_thumbnail(filename)
-            return redirect(url_for('hello_word'))
+            return jsonify({'message': 'Video upload.'}), 200
+
+        return jsonify({'message': 'Video not upload.'}), 400
 
 
 # @app.route('/video/')
@@ -146,6 +165,7 @@ def upload_file():
 @app.route('/videos/<name>')
 @login_required
 def show_file(name):
+    minio_client.set_client(current_user.get_id())
     as_attachment = 'attachment' in request.args
     fp = minio_client.get_video(name)
     resp = send_file(fp, download_name=name, as_attachment=as_attachment)
@@ -156,6 +176,7 @@ def show_file(name):
 @app.route('/thumbnails/<name>')
 @login_required
 def show_thumb(name):
+    minio_client.set_client(current_user.get_id())
     fp = minio_client.get_thumbnail(name)
     resp = send_file(fp, download_name=thumbnails.thumbnail_name(name))
     file_remover.cleanup_once_done(resp, fp)
@@ -166,7 +187,7 @@ def show_thumb(name):
 @login_required
 def get_tracked(name):
     if ('threshold' in request.args) ^ ('tracker' in request.args):
-        abort(400)
+        return jsonify({'message', 'Missing threshold or tracker parameter'}), 400
 
     if ('threshold' in request.args) and ('tracker' in request.args):
         threshold = float(request.args['threshold'])
@@ -174,6 +195,7 @@ def get_tracked(name):
         name = name_norm2track(name, threshold, tracker)
 
     as_attachment = 'attachment' in request.args
+    minio_client.set_client(current_user.get_id())
     fp = minio_client.get_tracked(name)
     resp = send_file(fp, download_name=name, as_attachment=as_attachment)
     file_remover.cleanup_once_done(resp, fp)
@@ -184,23 +206,38 @@ def get_tracked(name):
 @login_required
 def tracking(name):
 
-    if not 'threshold' in request.args:
-        abort(400)
-
-    if not 'tracker' in request.args:
-        abort(400)
+    if not 'threshold' in request.args or not 'tracker' in request.args:
+        return jsonify({'message', 'Missing threshold or tracker parameter'}), 400
 
     threshold = float(request.args['threshold'])
     tracker = (request.args['tracker'])
+    movie = Movie.query.filter_by(name=name).first()
+    if movie is None:
+        return jsonify({'message': 'video not exist'})
 
+    minio_client.set_client(current_user.get_id())
     conn = client.HTTPConnection('172.20.0.5', 5000)
     conn.request(
-        "GET", f"/{name}?user_id={minio_client.get_clent()[-2:]}&threshold={threshold}&tracker={tracker}")
+        "GET", f"/{name}?user_id={current_user.get_id()}&threshold={threshold}&tracker={tracker}")
     response = conn.getresponse()
 
     if (response.status != 200):
         abort(response.status)
+    filename = name_norm2track(name, threshold, tracker)
 
+    extension = filename.rsplit('.', 1)[-1].lower()
+    movie_with_detection = MovieWithDetection.query.join(
+        MovieWithDetection.source_movie).filter(and_(Movie.user_id == current_user.get_id(), MovieWithDetection.name == filename)).all()
+    for i in movie_with_detection:
+        db.session.delete(i)
+    # db.session.delete(movie_with_detection)
+    movie_with_detection = MovieWithDetection(
+        name=filename,
+        extension=extension,
+        source_movie_id=movie.movie_id,
+    )
+    db.session.add(movie_with_detection)
+    db.session.commit()
     fp = minio_client.get_tracked(name_norm2track(name, threshold, tracker))
     resp = send_file(fp, download_name=name)
     file_remover.cleanup_once_done(resp, fp)
