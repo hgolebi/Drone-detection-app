@@ -5,19 +5,19 @@ class AnnotationsRewriter:
     def __init__(self):
         self.dimensions = []
 
-    def get_dimensions_videos(self, dir_with_videos):
+    def get_dimensions_videos(self, dir_with_videos, dimensions_file="dimensions.txt"):
         """ Extracts the dimensions of all videos from the 
         dataset of videos and saves them to a file """
 
-        if os.path.exists("dimensions.txt"):
-            self.load_dimensions_from_file()
+        if os.path.exists(dimensions_file):
+            self.load_dimensions_from_file(dimensions_file)
         else:
             self.calculate_dimensions(dir_with_videos)
-            self.save_dimensions_to_file()
+            self.save_dimensions_to_file(dimensions_file)
         return self.dimensions
 
-    def load_dimensions_from_file(self):
-        with open("dimensions.txt", 'r') as file:
+    def load_dimensions_from_file(self, dimensions_file):
+        with open(dimensions_file, 'r') as file:
             lines = file.readlines()
             for line in lines:
                 width, height = line.strip().split(", ")
@@ -29,14 +29,14 @@ class AnnotationsRewriter:
             if not vid.isOpened():
                 vid.open(os.path.join(dir_with_videos, filename))
 
-            height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
             width = vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+            height = vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
             self.dimensions.append((width, height))
 
             vid.release()
 
-    def save_dimensions_to_file(self):
-        with open("dimensions.txt", 'a') as file:
+    def save_dimensions_to_file(self, dimensions_file):
+        with open(dimensions_file, 'a') as file:
             for idx, dim in enumerate(self.dimensions):
                 width, height = dim
                 if idx+1 < len(self.dimensions):
