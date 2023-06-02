@@ -115,12 +115,7 @@ def allowed_file(filename):
 @login_required
 def upload_file():
     if request.method == 'GET':
-        # stmt = db.select(Movie.name).where(
-        #     Movie.user_id == current_user.get_id())
         return jsonify([f'{i.name}' for i in Movie.query.all()])
-        minio_client.set_client(current_user.get_id())
-        video_list = [i for i in minio_client.list_names()]
-        return jsonify(video_list)
 
     if request.method == 'POST':
         # check if the post request has the file part
