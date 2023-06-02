@@ -9,7 +9,7 @@ class AnnotationsRewriter:
         """ Extracts the dimensions of all videos from the 
         dataset of videos and saves them to a file """
 
-        if os.path.exists("dimensions.txt"):
+        if os.path.exists(dimensions_file):
             self.load_dimensions_from_file(dimensions_file)
         else:
             self.calculate_dimensions(dir_with_videos)
