@@ -2,8 +2,8 @@ import './LoggingScreen.css'
 import React from 'react';
 import './App'
 
-// var API_URL = 'http://192.168.1.27:5000/'
-var API_URL = 'http://localhost:5000/'
+var API_URL = 'http://192.168.1.27:5000/'
+// var API_URL = 'http://localhost:5000/'
 
 
 class LoggingScreen extends React.Component {
@@ -62,15 +62,15 @@ class LoggingScreen extends React.Component {
 
     render () {
         return (
-            <div id="logging_screen">
-                <header id='log_head'>LOG IN</header>
-                <label id="username_label" >username:</label>
-                <input type='text' id='username_input' onChange={this.handleLoginChange}></input>
-                <label id="pass_label" >password:</label>
-                <input type='password' id='pass_input' onChange={this.handlePasswordChange}></input>
-                <div id="log_buttons">
-                    <button id='username_button' onClick={() => this.logIn()}>Log in</button>
-                    <button id='register_button' onClick={() => this.register()}>Register</button>
+            <div className="logging_screen">
+                <header className='log_head'>LOG IN</header>
+                <label className="label" >username:</label>
+                <input type='text' className='input' onChange={this.handleLoginChange}></input>
+                <label className="label" >password:</label>
+                <input type='password' className='input' onChange={this.handlePasswordChange}></input>
+                <div className="log_buttons">
+                    <button className='button' onClick={() => this.logIn()}>Log in</button>
+                    <button className='button' onClick={() => this.register()}>Register</button>
                 </div>
             </div>
         )
