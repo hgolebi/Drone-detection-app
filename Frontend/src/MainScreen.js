@@ -1,8 +1,8 @@
 import './MainScreen.css'
 import React from 'react'
 
-// var API_URL = 'http://192.168.1.27:5000/'
-var API_URL = 'http://localhost:5000/'
+var API_URL = 'http://192.168.1.27:5000/'
+// var API_URL = 'http://localhost:5000/'
 
 
 class MainScreen extends React.Component {
@@ -15,14 +15,22 @@ class MainScreen extends React.Component {
             vid_name: undefined,
             generated_vid: undefined,
             is_gen_vid_displayed: false,
-            method: undefined,
-            precision: 40
+            method: 'deepsort',
+            precision: 0.3
         }
     }
 
     componentDidMount() {
         this.getVideos();
+        this.updateGeneratedVideo();
         return;
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if (prevState.vid_name !== this.state.vid_name ||
+        prevState.method != this.state.method) {
+            this.updateGeneratedVideo();
+        }
     }
 
     getVideos() {
@@ -92,21 +100,19 @@ class MainScreen extends React.Component {
     }
 
     handleSliderChange = (event) => {
-        this.setState({precision: event.target.value});
+        const value = event.target.value / 100
+        this.setState({precision: value});
     }
 
     handleMethodChange = (event) => {
         this.setState({method: event.target.value});
-    }
-
-    getGeneratedVideo() {
 
     }
 
     generateVideo() {
         const vid_name = this.state.vid_name
         const method = this.state.method
-        const precision = this.state.precision / 100
+        const precision = this.state.precision
         const form = {
             tracker: method,
             treshold: precision,
@@ -128,6 +134,14 @@ class MainScreen extends React.Component {
         })
     }
 
+    updateGeneratedVideo() {
+        const vid_name = this.state.vid_name
+        const treshold = this.state.precision
+        const tracker = this.state.method
+        const url = 'tracked/' + vid_name + "?treshold=" + treshold + '&tracker=' + tracker
+        this.setState({generated_vid: url})
+    }
+
     render() {
         const thumbnail_list = this.state.videos.map((name, index) => (
             <div className='tn_card' key={index} name={name} onClick={() => this.changeVideo(name)}>
@@ -141,37 +155,37 @@ class MainScreen extends React.Component {
                 <b className='btn_label'>CHOOSE METHOD</b>
                 <div className='method_btns'>
                     <label className='radio'>
-                        <input type='radio' value='deepsort' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='deepsort' checked={this.state.method === 'deepsort'} name='method' onChange={this.handleMethodChange}></input>
                         <span>deepsort</span>
 
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='sort' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='sort' checked={this.state.method === 'sort'} name='method' onChange={this.handleMethodChange}></input>
                         <span>sort</span>
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='medianflow' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='medianflow' checked={this.state.method === 'medianflow'} name='method' onChange={this.handleMethodChange}></input>
                         <span>medianflow</span>
                     </label>
                 </div>
                 <div className='method_btns'>
                     <label className='radio'>
-                        <input type='radio' value='kcf' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='kcf' checked={this.state.method === 'kcf'} name='method' onChange={this.handleMethodChange}></input>
                         <span>kcf</span>
 
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='csrt' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='csrt' checked={this.state.method === 'csrt'} name='method' onChange={this.handleMethodChange}></input>
                         <span>csrt</span>
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='opticalflow' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='opticalflow' checked={this.state.method === 'opticalflow'} name='method' onChange={this.handleMethodChange}></input>
                         <span>opticalflow</span>
                     </label>
                 </div>
                 <b>CHOOSE PRECISION</b>
                 <div className="slidecontainer">
-                    <input type="range" min="0" max="100" value={this.state.precision} class="slider" id="myRange" onChange={this.handleSliderChange}></input>
+                    <input type="range" min="1" max="100" value={this.state.precision * 100} className="slider" id="myRange" onChange={this.handleSliderChange}></input>
                 </div>
                 <button className='btn generate' onClick={() => this.generateVideo()}>Generate</button>
             </div>

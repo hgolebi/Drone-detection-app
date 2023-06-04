@@ -1,4 +1,4 @@
-.logging_screen {
+.logging_panel {
     width: 600px;
     display: grid;
     grid-template-columns: 1;
@@ -40,4 +40,9 @@
 .button:hover {
     background-color: rgba(140, 65, 201, 0.137);
     color: white;
+}
+
+.info {
+    font-size: 1.2em;
+    text-align: center;
 }
