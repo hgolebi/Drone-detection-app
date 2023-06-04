@@ -74,15 +74,15 @@ class MainScreen extends React.Component {
     }
 
     train = () => {
-        fetch(API_URL + 'tracked/'+ this.state.vid_name, {
+        fetch(API_URL + 'tracked_videos/'+ this.state.vid_name, {
             credentials: 'include',
         })
-        .then(() => this.setState({vid_group: 'tracked/'}));
+        .then(() => this.setState({vid_group: 'tracked_videos/'}));
     }
 
     showGeneratedVideo() {
         this.setState({
-            vid_group: 'tracked/',
+            vid_group: 'tracked_videos/',
             is_gen_vid_displayed: true,
         });
         // this.setState({is_gen_vid_displayed: true});
@@ -128,17 +128,35 @@ class MainScreen extends React.Component {
         .then(response => {
             if (response.ok) {
                 this.setState({
-                    generated_vid: 'tracked/' + vid_name + '?treshold=' + precision + '&tracker=' + method,
+                    generated_vid: 'tracked_videos/' + vid_name + '?treshold=' + precision + '&tracker=' + method,
                 })
             }
         })
+    }
+
+    downloadVideo() {
+        fetch(API_URL + this.state.generated_vid + '&as_attachment=True', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'video/*'
+            }
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const name = this.state.vid_name + '_' + this.state.method
+            a.download = name; // nazwa pliku do pobrania
+            a.click();
+        });
     }
 
     updateGeneratedVideo() {
         const vid_name = this.state.vid_name
         const treshold = this.state.precision
         const tracker = this.state.method
-        const url = 'tracked/' + vid_name + "?treshold=" + treshold + '&tracker=' + tracker
+        const url = 'tracked_videos/' + vid_name + "?treshold=" + treshold + '&tracker=' + tracker
         this.setState({generated_vid: url})
     }
 
@@ -203,9 +221,9 @@ class MainScreen extends React.Component {
                 <b>GO BACK</b>
                 <img src='arrow_back.png' className='icon back'></img>
             </div>
-            <div className='button_card'>
+            <div className='button_card' onClick={() => this.downloadVideo()}>
                 <b className='button_label'>DOWNLOAD VIDEO</b>
-                <img src='download_film.png' className='icon down_vid'></img>
+                <img src='download_film.png' className='icon down_vid' ></img>
             </div>
             <div className='button_card'>
                 <b className='button_label'>DOWNLOAD ADDNOTATIONS</b>
