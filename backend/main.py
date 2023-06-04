@@ -36,7 +36,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://tracking_system:password@172.20.0.4:5432/tracking_system'
 app.config['SECRET_KEY'] = os.environ.get(
     'FLASK_SECRET_KEY', 'fallback_secret_key')
-CORS(app, origins="*", supports_credentials=True)
+CORS(app, resources={r"/*": {'origins': '*'}}, supports_credentials=True, allow_headers='*')
 
 db.init_app(app)
 with app.app_context():
@@ -190,7 +190,7 @@ def get_tracked(name):
     threshold = float(threshold)
     name = name_norm2track(name, threshold, tracker)
 
-    as_attachment = 'attachment' in request.args
+    as_attachment = request.args.get('as_attachment')
     minio_client.set_client(current_user.get_id())
     fp = minio_client.get_tracked(name)
     resp = send_file(fp, download_name=name, as_attachment=as_attachment)
@@ -204,14 +204,10 @@ def tracking(name):
     tracker = request.json.get('tracker')
     threshold = request.json.get('treshold')
 
-    if not 'threshold' in request.args:
+    if not threshold or not tracker:
         abort(400)
 
-    if not 'tracker' in request.args:
-        abort(400)
-
-    threshold = float(request.args['threshold'])
-    tracker = (request.args['tracker'])
+    threshold = float(threshold)
 
     minio_client.set_client(current_user.get_id())
     conn = client.HTTPConnection('172.20.0.5', 5000)
@@ -224,15 +220,16 @@ def tracking(name):
     filename = name_norm2track(name, threshold, tracker)
 
     extension = filename.rsplit('.', 1)[-1].lower()
-    movie_with_detection = MovieWithDetection.query.join(
-        MovieWithDetection.source_movie).filter(and_(Movie.user_id == current_user.get_id(), MovieWithDetection.name == filename)).all()
-    for i in movie_with_detection:
-        db.session.delete(i)
+    # movie_with_detection = MovieWithDetection.query.join(
+    #     MovieWithDetection.source_movie).filter(and_(Movie.user_id == current_user.get_id(), MovieWithDetection.name == filename)).all()
+    # for i in movie_with_detection:
+    #     db.session.delete(i)
     # db.session.delete(movie_with_detection)
+    src_movie = Movie.query.filter(and_(Movie.user_id == current_user.get_id(), Movie.name == name)).first()
     movie_with_detection = MovieWithDetection(
         name=filename,
         extension=extension,
-        source_movie_id=movie.movie_id,
+        source_movie_id=src_movie.movie_id,
     )
     db.session.add(movie_with_detection)
     db.session.commit()
