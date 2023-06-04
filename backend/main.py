@@ -204,14 +204,10 @@ def tracking(name):
     tracker = request.json.get('tracker')
     threshold = request.json.get('treshold')
 
-    if not 'threshold' in request.args:
-        abort(400)
+    if not threshold or not tracker:
+        return jsonify({'message': 'Missing treshold or tracker info'}, 400)
 
-    if not 'tracker' in request.args:
-        abort(400)
-
-    threshold = float(request.args['threshold'])
-    tracker = (request.args['tracker'])
+    threshold = float(threshold)
 
     minio_client.set_client(current_user.get_id())
     conn = client.HTTPConnection('172.20.0.5', 5000)
@@ -220,7 +216,7 @@ def tracking(name):
     response = conn.getresponse()
 
     if (response.status != 200):
-        abort(response.status)
+        return jsonify({'message': 'Database bad response'}, 500)
     filename = name_norm2track(name, threshold, tracker)
 
     extension = filename.rsplit('.', 1)[-1].lower()
