@@ -72,13 +72,14 @@ def login_authenticate():
         return jsonify({'message': 'Missing user login data'}), 400
     
     user = User.query.filter_by(username=username).first()
-    if user and bcrypt.check_password_hash(user.password, password):
+    if not user:
+        return jsonify({'message': f'User not found'}), 404
+    elif user and bcrypt.check_password_hash(user.password, password):
         login_user(user)
         return jsonify({'message': f'Hello {current_user.username}'}), 200  
-    elif not bcrypt.check_password_hash(user.password, password):
-        return jsonify({'message': f'Invalid password'}), 404
     else:
-        return jsonify({'message': f'User "{username}" is not in database'}), 404 
+        return jsonify({'message': f'Invalid password'}), 404
+
     
 @app.route('/logout')
 @login_required
@@ -164,8 +165,7 @@ def get_tracked(name):
     threshold = request.args.get('treshold')
     tracker = request.args.get('tracker')
     if not threshold or not tracker:
-        # abort(400)
-        return jsonify({'threshold': threshold, 'tracker': tracker}), 400
+        abort(400)
 
     threshold = float(threshold)
     name = name_norm2track(name, threshold, tracker)
