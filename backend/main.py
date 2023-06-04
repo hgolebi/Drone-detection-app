@@ -115,7 +115,7 @@ def allowed_file(filename):
 @login_required
 def upload_file():
     if request.method == 'GET':
-        return jsonify([f'{i.name}' for i in Movie.query.all()])
+        return jsonify([f'{i.name}' for i in Movie.query.filter_by(user_id = current_user.get_id()).all()])
 
     if request.method == 'POST':
         # check if the post request has the file part
