@@ -36,7 +36,7 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://tracking_system:password@172.20.0.4:5432/tracking_system'
 app.config['SECRET_KEY'] = os.environ.get(
     'FLASK_SECRET_KEY', 'fallback_secret_key')
-CORS(app, origins="*")
+CORS(app, origins="*", supports_credentials=True)
 
 db.init_app(app)
 with app.app_context():
@@ -48,8 +48,8 @@ login_manager = LoginManager(app)
 
 @app.post('/register')
 def register_user():
-    username = request.form.get('username')
-    password = request.form.get('password')
+    username = request.json.get('username')
+    password = request.json.get('password')
     if not username or not password:
         return jsonify({'message': 'Missing user registration data'}), 400
     user = User.query.filter_by(username=username).first()
@@ -70,19 +70,19 @@ def load_user(user_id):
 
 @app.post('/login')
 def login_authenticate():
-    username = request.form.get('username')
-    password = request.form.get('password')
+    username = request.json.get('username')
+    password = request.json.get('password')
     if not username or not password:
         return jsonify({'message': 'Missing user login data'}), 400
 
     user = User.query.filter_by(username=username).first()
-    if user and bcrypt.check_password_hash(user.password, password):
+    if not user:
+        return jsonify({'message': f'User not found'}), 404
+    elif user and bcrypt.check_password_hash(user.password, password):
         login_user(user)
         return jsonify({'message': f'Hello {current_user.username}'}), 200
-    elif not bcrypt.check_password_hash(user.password, password):
-        return jsonify({'message': f'Invalid password'}), 404
     else:
-        return jsonify({'message': f'User "{username}" is not in database'}), 404
+        return jsonify({'message': f'Invalid password'}), 404
 
 
 @app.route('/logout')
@@ -115,7 +115,7 @@ def allowed_file(filename):
 @login_required
 def upload_file():
     if request.method == 'GET':
-        return jsonify([f'{i.name}' for i in Movie.query.all()])
+        return jsonify([f'{i.name}' for i in Movie.query.filter_by(user_id = current_user.get_id()).all()])
 
     if request.method == 'POST':
         # check if the post request has the file part
@@ -181,13 +181,14 @@ def show_thumb(name):
 @app.route('/tracked_videos/<name>')
 @login_required
 def get_tracked(name):
-    if ('threshold' in request.args) ^ ('tracker' in request.args):
+
+    threshold = request.args.get('treshold')
+    tracker = request.args.get('tracker')
+    if not threshold or not tracker:
         return jsonify({'message', 'Missing threshold or tracker parameter'}), 400
 
-    if ('threshold' in request.args) and ('tracker' in request.args):
-        threshold = float(request.args['threshold'])
-        tracker = (request.args['tracker'])
-        name = name_norm2track(name, threshold, tracker)
+    threshold = float(threshold)
+    name = name_norm2track(name, threshold, tracker)
 
     as_attachment = 'attachment' in request.args
     minio_client.set_client(current_user.get_id())
@@ -197,18 +198,20 @@ def get_tracked(name):
     return resp
 
 
-@app.route('/processed_videos/<name>')
+@app.route('/tracking/<name>', methods=['POST'])
 @login_required
 def tracking(name):
+    tracker = request.json.get('tracker')
+    threshold = request.json.get('treshold')
 
-    if not 'threshold' in request.args or not 'tracker' in request.args:
-        return jsonify({'message', 'Missing threshold or tracker parameter'}), 400
+    if not 'threshold' in request.args:
+        abort(400)
+
+    if not 'tracker' in request.args:
+        abort(400)
 
     threshold = float(request.args['threshold'])
     tracker = (request.args['tracker'])
-    movie = Movie.query.filter_by(name=name).first()
-    if movie is None:
-        return jsonify({'message': 'video not exist'})
 
     minio_client.set_client(current_user.get_id())
     conn = client.HTTPConnection('172.20.0.5', 5000)
@@ -236,4 +239,4 @@ def tracking(name):
     fp = minio_client.get_tracked(name_norm2track(name, threshold, tracker))
     resp = send_file(fp, download_name=name)
     file_remover.cleanup_once_done(resp, fp)
-    return resp
+    return jsonify({'message': 'Tracked video generated'}), 201

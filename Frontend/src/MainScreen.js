@@ -2,6 +2,8 @@ import './MainScreen.css'
 import React from 'react'
 
 var API_URL = 'http://192.168.1.27:5000/'
+// var API_URL = 'http://localhost:5000/'
+
 
 class MainScreen extends React.Component {
 
@@ -13,14 +15,22 @@ class MainScreen extends React.Component {
             vid_name: undefined,
             generated_vid: undefined,
             is_gen_vid_displayed: false,
-            method: undefined,
-            precision: 40
+            method: 'deepsort',
+            precision: 0.3
         }
     }
 
     componentDidMount() {
         this.getVideos();
+        this.updateGeneratedVideo();
         return;
+    }
+
+    componentDidUpdate(prevProps, prevState) {
+        if (prevState.vid_name !== this.state.vid_name ||
+        prevState.method != this.state.method) {
+            this.updateGeneratedVideo();
+        }
     }
 
     getVideos() {
@@ -64,15 +74,15 @@ class MainScreen extends React.Component {
     }
 
     train = () => {
-        fetch(API_URL + 'tracked/'+ this.state.vid_name, {
+        fetch(API_URL + 'tracked_videos/'+ this.state.vid_name, {
             credentials: 'include',
         })
-        .then(() => this.setState({vid_group: 'tracked/'}));
+        .then(() => this.setState({vid_group: 'tracked_videos/'}));
     }
 
     showGeneratedVideo() {
         this.setState({
-            vid_group: 'tracked/',
+            vid_group: 'tracked_videos/',
             is_gen_vid_displayed: true,
         });
         // this.setState({is_gen_vid_displayed: true});
@@ -90,21 +100,19 @@ class MainScreen extends React.Component {
     }
 
     handleSliderChange = (event) => {
-        this.setState({precision: event.target.value});
+        const value = event.target.value / 100
+        this.setState({precision: value});
     }
 
     handleMethodChange = (event) => {
         this.setState({method: event.target.value});
-    }
-
-    getGeneratedVideo() {
 
     }
 
     generateVideo() {
         const vid_name = this.state.vid_name
         const method = this.state.method
-        const precision = this.state.precision / 100
+        const precision = this.state.precision
         const form = {
             tracker: method,
             treshold: precision,
@@ -120,10 +128,36 @@ class MainScreen extends React.Component {
         .then(response => {
             if (response.ok) {
                 this.setState({
-                    generated_vid: 'tracked/' + vid_name + '?treshold=' + precision + '&tracker=' + method,
+                    generated_vid: 'tracked_videos/' + vid_name + '?treshold=' + precision + '&tracker=' + method,
                 })
             }
         })
+    }
+
+    downloadVideo() {
+        fetch(API_URL + this.state.generated_vid + '&as_attachment=True', {
+            credentials: 'include',
+            headers: {
+                'Accept': 'video/*'
+            }
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const name = this.state.vid_name + '_' + this.state.method
+            a.download = name; // nazwa pliku do pobrania
+            a.click();
+        });
+    }
+
+    updateGeneratedVideo() {
+        const vid_name = this.state.vid_name
+        const treshold = this.state.precision
+        const tracker = this.state.method
+        const url = 'tracked_videos/' + vid_name + "?treshold=" + treshold + '&tracker=' + tracker
+        this.setState({generated_vid: url})
     }
 
     render() {
@@ -139,37 +173,37 @@ class MainScreen extends React.Component {
                 <b className='btn_label'>CHOOSE METHOD</b>
                 <div className='method_btns'>
                     <label className='radio'>
-                        <input type='radio' value='deepsort' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='deepsort' checked={this.state.method === 'deepsort'} name='method' onChange={this.handleMethodChange}></input>
                         <span>deepsort</span>
 
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='sort' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='sort' checked={this.state.method === 'sort'} name='method' onChange={this.handleMethodChange}></input>
                         <span>sort</span>
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='medianflow' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='medianflow' checked={this.state.method === 'medianflow'} name='method' onChange={this.handleMethodChange}></input>
                         <span>medianflow</span>
                     </label>
                 </div>
                 <div className='method_btns'>
                     <label className='radio'>
-                        <input type='radio' value='kcf' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='kcf' checked={this.state.method === 'kcf'} name='method' onChange={this.handleMethodChange}></input>
                         <span>kcf</span>
 
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='csrt' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='csrt' checked={this.state.method === 'csrt'} name='method' onChange={this.handleMethodChange}></input>
                         <span>csrt</span>
                     </label>
                     <label className='radio'>
-                        <input type='radio' value='opticalflow' name='method' onChange={this.handleMethodChange}></input>
+                        <input type='radio' value='opticalflow' checked={this.state.method === 'opticalflow'} name='method' onChange={this.handleMethodChange}></input>
                         <span>opticalflow</span>
                     </label>
                 </div>
                 <b>CHOOSE PRECISION</b>
                 <div className="slidecontainer">
-                    <input type="range" min="0" max="100" value={this.state.precision} class="slider" id="myRange" onChange={this.handleSliderChange}></input>
+                    <input type="range" min="1" max="100" value={this.state.precision * 100} className="slider" id="myRange" onChange={this.handleSliderChange}></input>
                 </div>
                 <button className='btn generate' onClick={() => this.generateVideo()}>Generate</button>
             </div>
@@ -187,21 +221,21 @@ class MainScreen extends React.Component {
                 <b>GO BACK</b>
                 <img src='arrow_back.png' className='icon back'></img>
             </div>
-            <div className='button_card'>
+            <div className='button_card' onClick={() => this.downloadVideo()}>
                 <b className='button_label'>DOWNLOAD VIDEO</b>
-                <img src='download_film.png' className='icon down_vid'></img>
+                <img src='download_film.png' className='icon down_vid' ></img>
             </div>
             <div className='button_card'>
                 <b className='button_label'>DOWNLOAD ADDNOTATIONS</b>
                 <img src='download_file.png' className='icon down_addn'></img>
+            </div>
         </div>
-
-    </div>
+        const video_url = API_URL + this.state.vid_group + this.state.vid_name
         return (
             <div id="main_screen">
                 <div id="video_container">
                     <video id='video' controls
-                        src={API_URL + this.state.vid_group + this.state.vid_name} type='video/mp4'>
+                        src={this.state.is_gen_vid_displayed ? API_URL + this.state.generated_vid : video_url} type='video/mp4'>
                     </video>
                 </div>
                 <div id="buttons_container">
