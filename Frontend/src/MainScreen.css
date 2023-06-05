@@ -205,6 +205,12 @@
     cursor: pointer;
 }
 
+.slidercontainer {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+}
+
 .generate {
     font-size: 1.5em;
     border: 3px solid transparent;

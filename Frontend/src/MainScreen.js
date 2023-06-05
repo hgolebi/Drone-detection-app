@@ -211,8 +211,10 @@ class MainScreen extends React.Component {
                     </label>
                 </div>
                 <b>CHOOSE PRECISION</b>
-                <div className="slidecontainer">
+                <div className="slidercontainer">
+                    <label>0.01</label>
                     <input type="range" min="1" max="50" value={this.state.precision * 100} className="slider" id="myRange" onChange={this.handleSliderChange}></input>
+                    <label>0.5</label>
                 </div>
                 <button className='btn generate' onClick={this.handleGenerateButton}>Generate</button>
             </div>
