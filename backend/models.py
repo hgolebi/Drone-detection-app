@@ -26,6 +26,7 @@ class MovieWithDetection(db.Model):
     date_added = db.Column(db.Date, default=db.func.current_date())
     extension = db.Column(db.String(10), nullable=False)
     url = db.Column(db.String(250))
+    
     annotations = db.Column(db.String(10000))
     source_movie_id = db.Column(db.Integer, db.ForeignKey('movie.movie_id'))
     source_movie = db.relationship('Movie', backref='detections')
