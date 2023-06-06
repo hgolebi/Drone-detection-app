@@ -1,8 +1,8 @@
 import './MainScreen.css'
 import React from 'react'
 
-var API_URL = 'http://192.168.1.27:5000/'
-// var API_URL = 'http://localhost:5000/'
+// var API_URL = 'http://192.168.1.27:5000/'
+var API_URL = 'http://localhost:5000/'
 
 
 class MainScreen extends React.Component {
@@ -85,7 +85,6 @@ class MainScreen extends React.Component {
             vid_group: 'tracked_videos/',
             is_gen_vid_displayed: true,
         });
-        // this.setState({is_gen_vid_displayed: true});
     }
 
     goBack() {
@@ -147,9 +146,13 @@ class MainScreen extends React.Component {
             const a = document.createElement('a');
             a.href = url;
             const name = this.state.vid_name + '_' + this.state.method
-            a.download = name; // nazwa pliku do pobrania
+            a.download = name; 
             a.click();
         });
+    }
+
+    downloadAddnotations() {
+
     }
 
     updateGeneratedVideo() {
@@ -226,7 +229,7 @@ class MainScreen extends React.Component {
                 <img src='download_film.png' className='icon down_vid' ></img>
             </div>
             <div className='button_card'>
-                <b className='button_label'>DOWNLOAD ADDNOTATIONS</b>
+                <b className='button_label'>DOWNLOAD ANNOTATIONS</b>
                 <img src='download_file.png' className='icon down_addn'></img>
             </div>
         </div>
