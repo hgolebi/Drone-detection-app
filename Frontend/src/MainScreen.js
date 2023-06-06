@@ -92,8 +92,11 @@ class MainScreen extends React.Component {
         }
     }
 
-    listElemOnClickHandle(event) {
-
+    listElemOnClickHandle = (event) => {
+        this.setState({
+            last_generated: event.target.getAttribute('name'),
+            is_gen_vid_displayed: true,
+        })
     }
 
     createListElement(name) {
