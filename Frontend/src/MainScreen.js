@@ -1,8 +1,8 @@
 import './MainScreen.css'
 import React from 'react'
 
-// var API_URL = 'http://192.168.1.27:5000/'
-var API_URL = 'http://172.20.0.2:5000/'
+var API_URL = 'http://192.168.1.27:5000/'
+// var API_URL = 'http://172.20.0.2:5000/'
 
 
 class MainScreen extends React.Component {
@@ -13,28 +13,28 @@ class MainScreen extends React.Component {
             videos: [],
             vid_group: 'videos/',
             vid_name: undefined,
-            generated_vid: undefined,
+            last_generated: undefined,
             is_gen_vid_displayed: false,
             method: 'deepsort',
             precision: 0.3,
             generating: false,
             gen_videos: [],
-            isListVisible: false
+            isListVisible: false,
         }
     }
 
     componentDidMount() {
         this.getVideos();
 
-        this.updateGeneratedVideo();
+        // this.updateGeneratedVideo();
         return;
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (prevState.vid_name !== this.state.vid_name ||
-        prevState.method != this.state.method) {
-            this.updateGeneratedVideo();
-        }
+        // if (prevState.vid_name !== this.state.vid_name ||
+        // prevState.method != this.state.method) {
+        //     this.updateGeneratedVideo();
+        // }
     }
 
     getVideos() {
@@ -54,7 +54,18 @@ class MainScreen extends React.Component {
         })
         .then(response => response.json())
         .then(json => {
-            this.setState({ gen_videos: json });
+            const keys = Object.keys(json);
+            const lastKey = keys[keys.length - 1];
+            const lastValue = json[lastKey];
+            const attributes = this.processVideoName(lastValue);
+            const video_name = attributes[0];
+            const precision = parseInt(attributes[1]) / 10000;
+            const method = attributes[2];
+            const gen_vid_name = video_name + '.mp4?treshold=' + precision + '&tracker=' + method;
+            this.setState({
+                gen_videos: json,
+                last_generated: gen_vid_name,
+            });
         })
         .catch(error => console.error(error))
     }
@@ -66,6 +77,40 @@ class MainScreen extends React.Component {
             is_gen_vid_displayed: false,
         })
         this.getGeneratedVideos(name);
+    }
+
+    processVideoName(filename) {
+        const regex = /^(.*)-(\d+)-(.*).mp4$/;
+        const matches = filename.match(regex);
+
+        if (matches && matches.length === 4) {
+            const name = matches[1]
+            const precision = matches[2];
+            const method = matches[3];
+            return [name, precision, method]
+        }
+    }
+
+    createListElement(name) {
+        const attributes = this.processVideoName(name)
+        const video_name = attributes[0]
+        const precision = parseInt(attributes[1]) / 10000
+        const method = attributes[2]
+        const gen_vid_name = video_name + '.mp4?treshold=' + precision + '&tracker=' + method
+        return (
+            <div className='list_elem'>
+                <div className='gen_vid_card gvt'>
+                    <video className='gen_vid' src={API_URL + 'tracked_videos/' + gen_vid_name} type='video/mp4'></video>
+                    <img src='play.png' className='icon play'></img>
+                </div>
+                <div className='attributes'>
+                    <p>Method</p>
+                    <b className='attr meth'>{method}</b>
+                    <p>Precision</p>
+                    <b className='attr prec'>{precision}</b>
+                </div>
+            </div>
+        )
     }
 
     sendVideo(video) {
@@ -128,6 +173,7 @@ class MainScreen extends React.Component {
         this.setState({generating: true})
         this.generateVideo()
     }
+
     generateVideo() {
         this.setState({generating: true})
         const vid_name = this.state.vid_name
@@ -148,7 +194,7 @@ class MainScreen extends React.Component {
         .then(response => {
             if (response.ok) {
                 this.setState({
-                    generated_vid: vid_name + '?treshold=' + precision + '&tracker=' + method,
+                    last_generated: vid_name + '?treshold=' + precision + '&tracker=' + method,
                 })
             }
         })
@@ -159,7 +205,7 @@ class MainScreen extends React.Component {
     }
 
     downloadVideo() {
-        fetch(API_URL + 'tracked_videos/' + this.state.generated_vid + '&as_attachment=True', {
+        fetch(API_URL + 'tracked_videos/' + this.state.last_generated + '&as_attachment=True', {
             credentials: 'include',
             headers: {
                 'Accept': 'video/*'
@@ -170,13 +216,13 @@ class MainScreen extends React.Component {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'tracked_' + this.state.vid_name; 
+            a.download = 'tracked_' + this.state.vid_name;
             a.click();
         });
     }
 
     downloadAddnotations() {
-        fetch(API_URL + 'adnotations/' + this.state.generated_vid, {
+        fetch(API_URL + 'adnotations/' + this.state.last_generated, {
             credentials: 'include',
         })
         .then(response => response.blob())
@@ -184,7 +230,7 @@ class MainScreen extends React.Component {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'annotations.txt'; 
+            a.download = 'annotations.txt';
             a.click();
         });
     }
@@ -194,8 +240,10 @@ class MainScreen extends React.Component {
         const treshold = this.state.precision
         const tracker = this.state.method
         const gen_vid =  vid_name + "?treshold=" + treshold + '&tracker=' + tracker
-        this.setState({generated_vid: gen_vid})
+        this.setState({last_generated: gen_vid})
     }
+
+
 
     render() {
         const thumbnail_list = this.state.videos.map((name, index) => (
@@ -254,12 +302,12 @@ class MainScreen extends React.Component {
                         <div class="lds-ring"><div></div><div></div><div></div><div></div></div> :
                         <img src='play.png' className='icon play'></img>
                     }
-                    <video className='gen_vid' src={API_URL + 'tracked_videos/' + this.state.generated_vid} type='video/mp4'></video>
+                    <video className='gen_vid' src={API_URL + 'tracked_videos/' + this.state.last_generated} type='video/mp4'></video>
                 </div>
             </div>
             <div className='see_more_panel' onClick={() => {this.setState({isListVisible: true})}}>
                 <b>SEE FULL LIST</b>
-                <img className='icon list' src='list.png'></img>
+                <img className='icon' src='list.png'></img>
             </div>
         </div>
         const gen_vid_controls =
@@ -279,17 +327,22 @@ class MainScreen extends React.Component {
         </div>
         const video_url = API_URL + this.state.vid_group + this.state.vid_name
         const list_elements = this.state.gen_videos.map((name, index) => (
-        <div className='list_elem' key={'elem' + index} name={name}>
-            <b>{name}</b>
+        <div className='le' key={'elem' + index}>
+            {this.createListElement(name)}
         </div>
         ))
-        const listPanel = <div className='list_div'>{list_elements}</div>
+        const listPanel =
+        <div className='list_div' onClick={() => {this.setState({isListVisible: false})}}>
+            <div className='list'>
+                {list_elements}
+            </div>
+        </div>
         return (
             <div id="main_screen">
-                {/* {this.state.isListVisible ? listPanel : ()=>{}} */}
+                {this.state.isListVisible ? listPanel : ()=>{}}
                 <div id="video_container">
                     <video id='video' controls
-                        src={this.state.is_gen_vid_displayed ? API_URL + 'tracked_videos/' + this.state.generated_vid : video_url} type='video/mp4'>
+                        src={this.state.is_gen_vid_displayed ? API_URL + 'tracked_videos/' + this.state.last_generated : video_url} type='video/mp4'>
                     </video>
                 </div>
                 <div id="buttons_container">
