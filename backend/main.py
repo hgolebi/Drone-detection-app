@@ -199,6 +199,16 @@ def get_tracked(name):
     return resp
 
 
+@app.route('/list_tracked_videos/<name>')
+@login_required
+def list_tracked(name):
+    movie_id = Movie.query.filter(and_(
+        Movie.name == name, Movie.user_id == current_user.get_id())).first().movie_id
+    videos = MovieWithDetection.query.filter(
+        MovieWithDetection.source_movie_id == movie_id).all()
+    return jsonify([i.name for i in videos])
+
+
 @app.route('/tracking/<name>', methods=['POST'])
 @login_required
 def tracking(name):
