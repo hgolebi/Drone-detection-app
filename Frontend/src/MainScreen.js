@@ -18,11 +18,14 @@ class MainScreen extends React.Component {
             method: 'deepsort',
             precision: 0.3,
             generating: false,
+            gen_videos: [],
+            isListVisible: false
         }
     }
 
     componentDidMount() {
         this.getVideos();
+
         this.updateGeneratedVideo();
         return;
     }
@@ -45,12 +48,24 @@ class MainScreen extends React.Component {
         })
     }
 
+    getGeneratedVideos(vid_name) {
+        fetch(API_URL + 'list_tracked_videos/' + vid_name, {
+            credentials: 'include',
+        })
+        .then(response => response.json())
+        .then(json => {
+            this.setState({ gen_videos: json });
+        })
+        .catch(error => console.error(error))
+    }
+
     changeVideo(name) {
         this.setState({
             vid_name: name,
             vid_group: 'videos/',
             is_gen_vid_displayed: false,
         })
+        this.getGeneratedVideos(name);
     }
 
     sendVideo(video) {
@@ -139,6 +154,7 @@ class MainScreen extends React.Component {
         })
         .then(() => {
             this.setState({generating: false})
+            this.getGeneratedVideos(vid_name)
         })
     }
 
@@ -231,7 +247,7 @@ class MainScreen extends React.Component {
                 <button className='btn generate' onClick={this.handleGenerateButton}>Generate</button>
             </div>
             <div className='gen_vid_panel'>
-                <b>GENERATED VIDEO</b>
+                <b>LAST GENERATED VIDEO</b>
                 <div className='gen_vid_card' onClick={this.state.generating ? () => {} : () => this.showGeneratedVideo()}>
                     {
                         this.state.generating ?
@@ -240,6 +256,10 @@ class MainScreen extends React.Component {
                     }
                     <video className='gen_vid' src={API_URL + 'tracked_videos/' + this.state.generated_vid} type='video/mp4'></video>
                 </div>
+            </div>
+            <div className='see_more_panel' onClick={() => {this.setState({isListVisible: true})}}>
+                <b>SEE FULL LIST</b>
+                <img className='icon list' src='list.png'></img>
             </div>
         </div>
         const gen_vid_controls =
@@ -258,8 +278,15 @@ class MainScreen extends React.Component {
             </div>
         </div>
         const video_url = API_URL + this.state.vid_group + this.state.vid_name
+        const list_elements = this.state.gen_videos.map((name, index) => (
+        <div className='list_elem' key={'elem' + index} name={name}>
+            <b>{name}</b>
+        </div>
+        ))
+        const listPanel = <div className='list_div'>{list_elements}</div>
         return (
             <div id="main_screen">
+                {/* {this.state.isListVisible ? listPanel : ()=>{}} */}
                 <div id="video_container">
                     <video id='video' controls
                         src={this.state.is_gen_vid_displayed ? API_URL + 'tracked_videos/' + this.state.generated_vid : video_url} type='video/mp4'>
