@@ -3,7 +3,7 @@ import React from 'react';
 import './App'
 
 // var API_URL = 'http://192.168.1.27:5000/'
-var API_URL = 'http://localhost:5000/'
+var API_URL = 'http://172.20.0.2:5000/'
 
 
 class LoggingScreen extends React.Component {

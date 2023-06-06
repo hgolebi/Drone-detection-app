@@ -36,12 +36,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://tracking_system:password@172.20.0.4:5432/tracking_system'
 app.config['SECRET_KEY'] = os.environ.get(
     'FLASK_SECRET_KEY', 'fallback_secret_key')
-<<<<<<< HEAD
 CORS(app, resources={r"/*": {'origins': '*'}},
      supports_credentials=True, allow_headers='*')
-=======
-CORS(app, resources={r"/*": {'origins': '*'}}, supports_credentials=True, allow_headers='*')
->>>>>>> master
 
 db.init_app(app)
 with app.app_context():

@@ -2,7 +2,7 @@ import './MainScreen.css'
 import React from 'react'
 
 // var API_URL = 'http://192.168.1.27:5000/'
-var API_URL = 'http://localhost:5000/'
+var API_URL = 'http://172.20.0.2:5000/'
 
 
 class MainScreen extends React.Component {
@@ -133,7 +133,7 @@ class MainScreen extends React.Component {
         .then(response => {
             if (response.ok) {
                 this.setState({
-                    generated_vid: 'tracked_videos/' + vid_name + '?treshold=' + precision + '&tracker=' + method,
+                    generated_vid: vid_name + '?treshold=' + precision + '&tracker=' + method,
                 })
             }
         })
@@ -143,7 +143,7 @@ class MainScreen extends React.Component {
     }
 
     downloadVideo() {
-        fetch(API_URL + this.state.generated_vid + '&as_attachment=True', {
+        fetch(API_URL + 'tracked_videos/' + this.state.generated_vid + '&as_attachment=True', {
             credentials: 'include',
             headers: {
                 'Accept': 'video/*'
@@ -154,22 +154,31 @@ class MainScreen extends React.Component {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            const name = this.state.vid_name + '_' + this.state.method
-            a.download = name; 
+            a.download = 'tracked_' + this.state.vid_name; 
             a.click();
         });
     }
 
     downloadAddnotations() {
-
+        fetch(API_URL + 'adnotations/' + this.state.generated_vid, {
+            credentials: 'include',
+        })
+        .then(response => response.blob())
+        .then(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'annotations.txt'; 
+            a.click();
+        });
     }
 
     updateGeneratedVideo() {
         const vid_name = this.state.vid_name
         const treshold = this.state.precision
         const tracker = this.state.method
-        const url = 'tracked_videos/' + vid_name + "?treshold=" + treshold + '&tracker=' + tracker
-        this.setState({generated_vid: url})
+        const gen_vid =  vid_name + "?treshold=" + treshold + '&tracker=' + tracker
+        this.setState({generated_vid: gen_vid})
     }
 
     render() {
@@ -229,7 +238,7 @@ class MainScreen extends React.Component {
                         <div class="lds-ring"><div></div><div></div><div></div><div></div></div> :
                         <img src='play.png' className='icon play'></img>
                     }
-                    <video className='gen_vid' src={API_URL + this.state.generated_vid} type='video/mp4'></video>
+                    <video className='gen_vid' src={API_URL + 'tracked_videos/' + this.state.generated_vid} type='video/mp4'></video>
                 </div>
             </div>
         </div>
@@ -243,7 +252,7 @@ class MainScreen extends React.Component {
                 <b className='button_label'>DOWNLOAD VIDEO</b>
                 <img src='download_film.png' className='icon down_vid' ></img>
             </div>
-            <div className='button_card'>
+            <div className='button_card' onClick={() => this.downloadAddnotations()}>
                 <b className='button_label'>DOWNLOAD ANNOTATIONS</b>
                 <img src='download_file.png' className='icon down_addn'></img>
             </div>
@@ -253,7 +262,7 @@ class MainScreen extends React.Component {
             <div id="main_screen">
                 <div id="video_container">
                     <video id='video' controls
-                        src={this.state.is_gen_vid_displayed ? API_URL + this.state.generated_vid : video_url} type='video/mp4'>
+                        src={this.state.is_gen_vid_displayed ? API_URL + 'tracked_videos/' + this.state.generated_vid : video_url} type='video/mp4'>
                     </video>
                 </div>
                 <div id="buttons_container">
