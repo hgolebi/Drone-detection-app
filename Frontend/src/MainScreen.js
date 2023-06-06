@@ -13,6 +13,7 @@ class MainScreen extends React.Component {
             videos: [],
             vid_group: 'videos/',
             vid_name: undefined,
+
             last_generated: undefined,
             is_gen_vid_displayed: false,
             method: 'deepsort',
@@ -91,6 +92,10 @@ class MainScreen extends React.Component {
         }
     }
 
+    listElemOnClickHandle(event) {
+
+    }
+
     createListElement(name) {
         const attributes = this.processVideoName(name)
         const video_name = attributes[0]
@@ -99,8 +104,8 @@ class MainScreen extends React.Component {
         const gen_vid_name = video_name + '.mp4?treshold=' + precision + '&tracker=' + method
         return (
             <div className='list_elem'>
-                <div className='gen_vid_card gvt'>
-                    <video className='gen_vid' src={API_URL + 'tracked_videos/' + gen_vid_name} type='video/mp4'></video>
+                <div className='gen_vid_card gvt' value={gen_vid_name} onClick={this.listElemOnClickHandle}>
+                    <video className='gen_vid' src={API_URL + 'tracked_videos/' + gen_vid_name} name={gen_vid_name} type='video/mp4'></video>
                     <img src='play.png' className='icon play'></img>
                 </div>
                 <div className='attributes'>
@@ -190,13 +195,6 @@ class MainScreen extends React.Component {
             },
             credentials: 'include',
             body: JSON.stringify(form),
-        })
-        .then(response => {
-            if (response.ok) {
-                this.setState({
-                    last_generated: vid_name + '?treshold=' + precision + '&tracker=' + method,
-                })
-            }
         })
         .then(() => {
             this.setState({generating: false})
