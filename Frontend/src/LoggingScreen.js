@@ -83,6 +83,7 @@ class LoggingScreen extends React.Component {
             headers: {
                 'Content-Type': 'application/json',
             },
+            credentials: 'include',
             body: JSON.stringify(form)
         })
         .then(response => {

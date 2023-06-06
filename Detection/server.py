@@ -27,9 +27,6 @@ def hello_word(name):
     if not 'tracker' in request.args:
         abort(400)
 
-    # print('dupa')
-    # print(os.getcwd())
-    # print('dupa')
 
     user_id = request.args['user_id']
     threshold = float(request.args['threshold'])

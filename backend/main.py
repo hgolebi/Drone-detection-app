@@ -36,8 +36,12 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://tracking_system:password@172.20.0.4:5432/tracking_system'
 app.config['SECRET_KEY'] = os.environ.get(
     'FLASK_SECRET_KEY', 'fallback_secret_key')
+<<<<<<< HEAD
 CORS(app, resources={r"/*": {'origins': '*'}},
      supports_credentials=True, allow_headers='*')
+=======
+CORS(app, resources={r"/*": {'origins': '*'}}, supports_credentials=True, allow_headers='*')
+>>>>>>> master
 
 db.init_app(app)
 with app.app_context():
@@ -216,7 +220,7 @@ def tracking(name):
     threshold = request.json.get('treshold')
 
     if not threshold or not tracker:
-        abort(400)
+        return jsonify({'message': 'Missing treshold or tracker info'}, 400)
 
     threshold = float(threshold)
 
@@ -227,7 +231,7 @@ def tracking(name):
     response = conn.getresponse()
 
     if (response.status != 200):
-        abort(response.status)
+        return jsonify({'message': 'Database bad response'}, 500)
     filename = name_norm2track(name, threshold, tracker)
 
     extension = filename.rsplit('.', 1)[-1].lower()

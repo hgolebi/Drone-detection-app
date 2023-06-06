@@ -16,7 +16,8 @@ class MainScreen extends React.Component {
             generated_vid: undefined,
             is_gen_vid_displayed: false,
             method: 'deepsort',
-            precision: 0.3
+            precision: 0.3,
+            generating: false,
         }
     }
 
@@ -108,7 +109,12 @@ class MainScreen extends React.Component {
 
     }
 
+    handleGenerateButton = () => {
+        this.setState({generating: true})
+        this.generateVideo()
+    }
     generateVideo() {
+        this.setState({generating: true})
         const vid_name = this.state.vid_name
         const method = this.state.method
         const precision = this.state.precision
@@ -130,6 +136,9 @@ class MainScreen extends React.Component {
                     generated_vid: 'tracked_videos/' + vid_name + '?treshold=' + precision + '&tracker=' + method,
                 })
             }
+        })
+        .then(() => {
+            this.setState({generating: false})
         })
     }
 
@@ -205,15 +214,21 @@ class MainScreen extends React.Component {
                     </label>
                 </div>
                 <b>CHOOSE PRECISION</b>
-                <div className="slidecontainer">
-                    <input type="range" min="1" max="100" value={this.state.precision * 100} className="slider" id="myRange" onChange={this.handleSliderChange}></input>
+                <div className="slidercontainer">
+                    <label>0.01</label>
+                    <input type="range" min="1" max="50" value={this.state.precision * 100} className="slider" id="myRange" onChange={this.handleSliderChange}></input>
+                    <label>0.5</label>
                 </div>
-                <button className='btn generate' onClick={() => this.generateVideo()}>Generate</button>
+                <button className='btn generate' onClick={this.handleGenerateButton}>Generate</button>
             </div>
             <div className='gen_vid_panel'>
                 <b>GENERATED VIDEO</b>
-                <div className='gen_vid_card' onClick={() => this.showGeneratedVideo()}>
-                    <img src='play.png' className='icon play'></img>
+                <div className='gen_vid_card' onClick={this.state.generating ? () => {} : () => this.showGeneratedVideo()}>
+                    {
+                        this.state.generating ?
+                        <div class="lds-ring"><div></div><div></div><div></div><div></div></div> :
+                        <img src='play.png' className='icon play'></img>
+                    }
                     <video className='gen_vid' src={API_URL + this.state.generated_vid} type='video/mp4'></video>
                 </div>
             </div>
