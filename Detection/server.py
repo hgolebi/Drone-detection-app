@@ -49,14 +49,17 @@ def hello_word(name):
     ot.run()
 
     command = f"ffmpeg -y -i Detection/tmp/out.mp4 -c:v libx264 -preset medium -crf 23 -c:a copy Detection/tmp/out_avc1.mp4"
-    subprocess.call(command, shell=True)    
+    subprocess.call(command, shell=True)
 
     new_name = name[:name.rfind('.')]
-    new_name = f'{name}-{int(threshold*10000)}-{tracker}.mp4'
+    new_name = f'{new_name}-{int(threshold*10000)}-{tracker}.mp4'
+    adnotations_name = new_name.replace('.mp4', '.txt')
 
     minio_client.fput_object(
         f"user{user_id}", f"tracked/{new_name}", f"Detection/tmp/out_avc1.mp4", content_type='video/mp4')
 
+    minio_client.put_object(f"user{user_id}", f"adnotations/{adnotations_name}",
+                            ot.get_adnotations(), length=-1, part_size=10485760)
     os.remove(f"Detection/tmp/out.mp4")
     os.remove(f"Detection/tmp/out_avc1.mp4")
     os.remove(f"Detection/tmp/{name}")

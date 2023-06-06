@@ -4,7 +4,7 @@ from Trackers.deep_sort_tracker import DeepSortTracker, SortTracker
 from ultralytics import YOLO
 from Detection.Yolo import model_dir
 import torch
-from io import StringIO
+from io import StringIO, BytesIO
 import sys
 import cv2
 import random
@@ -61,7 +61,8 @@ class ObjectTracking:
         """ Write detections as colored boxes based on track_id """
         for track in self.tracker.tracks:
             x1, y1, x2, y2 = track.bbox
-            self.adnotations.append([self.frame_counter, track.track_id, x1, y1, x2, y2])
+            self.adnotations.append(
+                [self.frame_counter, track.track_id, x1, y1, x2, y2])
             cv2.rectangle(self.frame, (int(x1), int(y1)), (int(x2), int(y2)),
                           (self.colors[track.track_id % len(self.colors)]), 3)
             cv2.putText(self.frame, 'Drone', (int(x1), int(y1)-8), cv2.FONT_HERSHEY_SIMPLEX, 0.7,
@@ -102,11 +103,14 @@ class ObjectTracking:
 
     def save_adnotations(self):
         """ Save adnotations in proper format """
-        self.text_file = StringIO()
+        self.text_file = BytesIO()
         for item in self.adnotations:
-            self.text_file.write(', '.join(str(round(num, 2))
-                                 for num in item) + '\n')
+            self.text_file.write((', '.join(str(round(num, 2))
+                                 for num in item) + '\n').encode())
         self.text_file.seek(0)
+
+    def get_adnotations(self):
+        return self.text_file
 
     def run(self):
         """ Start Object Tracking

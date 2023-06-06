@@ -36,7 +36,8 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://tracking_system:password@172.20.0.4:5432/tracking_system'
 app.config['SECRET_KEY'] = os.environ.get(
     'FLASK_SECRET_KEY', 'fallback_secret_key')
-CORS(app, resources={r"/*": {'origins': '*'}}, supports_credentials=True, allow_headers='*')
+CORS(app, resources={r"/*": {'origins': '*'}},
+     supports_credentials=True, allow_headers='*')
 
 db.init_app(app)
 with app.app_context():
@@ -94,7 +95,7 @@ def logout():
 
 def name_norm2track(name, threshold, tracker):
     new_name = name[:name.rfind('.')]
-    new_name = f'{name}-{int(threshold*10000)}-{tracker}.mp4'
+    new_name = f'{new_name}-{int(threshold*10000)}-{tracker}.mp4'
     return new_name
 
 
@@ -115,7 +116,7 @@ def allowed_file(filename):
 @login_required
 def upload_file():
     if request.method == 'GET':
-        return jsonify([f'{i.name}' for i in Movie.query.filter_by(user_id = current_user.get_id()).all()])
+        return jsonify([f'{i.name}' for i in Movie.query.filter_by(user_id=current_user.get_id()).all()])
 
     if request.method == 'POST':
         # check if the post request has the file part
@@ -220,12 +221,9 @@ def tracking(name):
     filename = name_norm2track(name, threshold, tracker)
 
     extension = filename.rsplit('.', 1)[-1].lower()
-    # movie_with_detection = MovieWithDetection.query.join(
-    #     MovieWithDetection.source_movie).filter(and_(Movie.user_id == current_user.get_id(), MovieWithDetection.name == filename)).all()
-    # for i in movie_with_detection:
-    #     db.session.delete(i)
-    # db.session.delete(movie_with_detection)
-    src_movie = Movie.query.filter(and_(Movie.user_id == current_user.get_id(), Movie.name == name)).first()
+
+    src_movie = Movie.query.filter(
+        and_(Movie.user_id == current_user.get_id(), Movie.name == name)).first()
     movie_with_detection = MovieWithDetection(
         name=filename,
         extension=extension,
@@ -233,7 +231,30 @@ def tracking(name):
     )
     db.session.add(movie_with_detection)
     db.session.commit()
-    fp = minio_client.get_tracked(name_norm2track(name, threshold, tracker))
-    resp = send_file(fp, download_name=name)
-    file_remover.cleanup_once_done(resp, fp)
+    # fp = minio_client.get_tracked(name_norm2track(name, threshold, tracker))
+    # resp = send_file(fp, download_name=name)
+    # file_remover.cleanup_once_done(resp, fp)
     return jsonify({'message': 'Tracked video generated'}), 201
+
+
+@app.route('/adnotations/<name>')
+@login_required
+def get_adnotations(name):
+
+    threshold = request.args.get('treshold')
+    tracker = request.args.get('tracker')
+    if not threshold or not tracker:
+        return jsonify({'message': 'Missing threshold or tracker parameter'}), 400
+
+    threshold = float(threshold)
+
+    name = name_norm2track(name, threshold, tracker)
+    if MovieWithDetection.query.filter(MovieWithDetection.name == name).first() is None:
+        return jsonify({'message': 'File not found'}), 400
+
+    minio_client.set_client(current_user.get_id())
+    fp = minio_client.get_adnotations(name.replace(".mp4", '.txt'))
+    resp = send_file(fp, download_name=name,
+                     as_attachment=True, mimetype='text/plain')
+    file_remover.cleanup_once_done(resp, fp)
+    return resp

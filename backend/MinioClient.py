@@ -82,6 +82,22 @@ class MinioClient:
     def get_tracked(self, filename):
         return self._get_video(f"tracked/{filename}")
 
+    def get_adnotations(self, filename):
+        if self._bucket is None:
+            raise SyntaxError('User not select')
+        tmp = tempfile.NamedTemporaryFile()
+        try:
+            response = self._client.get_object(
+                self._bucket, f"adnotations/{filename}")
+            tmp.write(response.data)
+
+    # Read data from response.
+        finally:
+            response.close()
+            response.release_conn()
+        tmp.seek(0)
+        return tmp
+
     def list_object(self):
         if self._bucket is None:
             raise SyntaxError('User not select')
