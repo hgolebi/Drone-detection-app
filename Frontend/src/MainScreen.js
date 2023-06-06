@@ -1,8 +1,8 @@
 import './MainScreen.css'
 import React from 'react'
 
-var API_URL = 'http://192.168.1.27:5000/'
-// var API_URL = 'http://localhost:5000/'
+// var API_URL = 'http://192.168.1.27:5000/'
+var API_URL = 'http://localhost:5000/'
 
 
 class MainScreen extends React.Component {
